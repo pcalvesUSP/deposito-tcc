@@ -49,6 +49,7 @@ Projeto [laravel/excel](https://laravel-excel.com/)
 composer install --ignore-platform-reqs
 php artisan migrate
 php artisan key:generate
+
 ```
 <p><b>No Banco de Dados</b> ajustar o campo CODPES da tabela users para aceitar valores nulos</p>
 
