@@ -33,8 +33,11 @@ O Login é realizado através da senha única.</p>
 Os projetos da iniciativa uspdev que estão sendo usados
 
 [uspdev/replicado](https://github.com/uspdev/replicado)
+    
 [uspdev/laravel-replicado](https://github.com/uspdev/laravel-replicado)
+    
 [uspdev/senha-unica-socialite](https://github.com/uspdev/senhaunica-socialite)
+    
 [uspdev/laravel-usp-theme](https://github.com/uspdev/laravel-usp-theme)
 
 Projeto [laravel/excel](https://laravel-excel.com/)  
