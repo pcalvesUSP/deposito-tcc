@@ -32,10 +32,10 @@ O Login é realizado através da senha única.</p>
 <p>
 Os projetos da iniciativa uspdev que estão sendo usados
 
-[uspdev/replicado](https://github.com/uspdev/replicado)
-[uspdev/laravel-replicado](https://github.com/uspdev/laravel-replicado)
-[uspdev/senha-unica-socialite](https://github.com/uspdev/senhaunica-socialite)
-[uspdev/laravel-usp-theme](https://github.com/uspdev/laravel-usp-theme)
+* [uspdev/replicado](https://github.com/uspdev/replicado)
+* [uspdev/laravel-replicado](https://github.com/uspdev/laravel-replicado)
+* [uspdev/senha-unica-socialite](https://github.com/uspdev/senhaunica-socialite)
+* [uspdev/laravel-usp-theme](https://github.com/uspdev/laravel-usp-theme)
 
 Projeto [laravel/excel](https://laravel-excel.com/)  
 </p>
@@ -45,12 +45,11 @@ Projeto [laravel/excel](https://laravel-excel.com/)
 <p>Copiar arquivo .env.example para .env e ajustar as diretivas (APP_NAME, APP_URL, senhas de BD, replicado, SMTP, etc.)</p>
 
 <p>No diretório onde consta o projeto, rodar o seguinte comando:</p>
-´´´
+```
 composer install --ignore-platform-reqs
 php artisan migrate
 php artisan key:generate
-
-´´´
+```
 <p><b>No Banco de Dados</b> ajustar o campo CODPES da tabela users para aceitar valores nulos</p>
 
 Acessar o endereço: http://[APP_URL]/configuracao-inicial (essa rota poderá ser desativada).
