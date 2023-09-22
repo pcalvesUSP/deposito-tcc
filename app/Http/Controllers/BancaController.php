@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 
 use App\Models\Banca;
+use App\Models\Monografia;
 use App\Models\User;
 
 class BancaController extends Controller
@@ -33,8 +34,15 @@ class BancaController extends Controller
                           ->orderBy('ano','desc')
                           ->orderBy('nome')
                           ->paginate($paginas);
+        $monografia = null;
 
-        return view('cadastro-banca', ['mensagem'=> $msg,'listBanca'=>$listBanca]);
+        foreach($listBanca as $list) {
+            if (!empty($list->id)) {
+                $monografia[$list->id] = Monografia::find($list->monografia_id);
+            }
+        }
+
+        return view('cadastro-banca', ['mensagem'=> $msg,'listBanca'=>$listBanca, 'monografia'=>$monografia]);
     }
 
     /**

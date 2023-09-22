@@ -18,11 +18,17 @@ class CreateMonoOrientadoresTable extends Migration
             $table->unsignedBigInteger('orientadores_id');
             $table->unsignedBigInteger('monografia_id');
             $table->boolean('principal')->default(false);
+            $table->enum('status',['AGUARDANDO APROVACAO ORIENTADOR'
+                                  ,'APROVADO'
+                                  ,'REPROVADO']);
+            $table->float('nota',2);
+            $table->integer('frequencia');
             $table->timestamps();
             
             $table->foreign('orientadores_id')->references('id')->on('orientadores');
             $table->foreign('monografia_id')->references('id')->on('monografias');
-            $table->unique(['orientadores_id', 'monografia_id']);
+            //$table->unique(['orientadores_id', 'monografia_id']); //cenário para vários orientadores
+            $table->unique('monografia_id'); //cenário para um único orientador
         });
     }
 

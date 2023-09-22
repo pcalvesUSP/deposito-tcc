@@ -19,8 +19,13 @@ class CreateOrientadoresTable extends Migration
             $table->string('CPF',11)->nullable();
             $table->string('nome', 80);
             $table->string('email',100);
-            $table->string('password', 250)->nullable();
+            $table->string('instituicao_vinculo',150);
+            $table->string('telefone',15)->nullable();
+            $table->string('password', 255)->nullable();
             $table->boolean('externo')->default(false);
+            $table->boolean('aprovado')->default(false);
+            $table->text('area_atuacao')->nullable();
+            $table->string('link_lattes',255)->nullable();
             $table->timestamps();
             $table->softDeletes();
 

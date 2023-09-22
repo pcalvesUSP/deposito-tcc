@@ -29,7 +29,7 @@
     <label for="assinatura">Assinatura: </label><input type="file" class="inputBorder" style="left:68px;" name="assinatura" id="assinatura">
     <div class="erro">{{ $errors->has('assinatura') ? $errors->first('assinatura'):null }}</div><br/><br/>
     <input type="submit" id="buttonSubmit" value="@if (isset($objComissao)) Alterar @else Cadastrar @endif"/>
-    @if (isset($objComissao)) <button id="buttonSubmit" style="width:auto;border:none;" onclick="windows.location='{{ route('orientador.index') }}'; return false;">Cancelar</button> @endif
+    <button id="buttonSubmit" style="width:auto;border:none;" onclick="window.location='{{ route('comissao.index') }}'; return false;">Cancelar</button>
 </form>
 <script src="js/cadastroComissao.js"></script>
 <script>

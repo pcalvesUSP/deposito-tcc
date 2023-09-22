@@ -17,6 +17,10 @@ class CreateAlunosTable extends Migration
             $table->integer('id');
             $table->string('nome', 80);
             $table->foreignId('monografia_id')->constrained();
+            $table->integer('projeto_nota')->nullable();
+            $table->integer('projeto_frequencia')->nullable();
+            $table->integer('tcc_nota')->nullable();
+            $table->integer('tcc_frequencia')->nullable();
             $table->timestamps();
 
             $table->primary('id');

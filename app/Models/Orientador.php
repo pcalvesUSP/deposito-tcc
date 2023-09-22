@@ -35,9 +35,9 @@ class Orientador extends Model
     }
 
     /**
-     * Relação N:N
+     * Relação  N:N
      */
     public function monografias() {
-        return $this->belongsToMany(Monografias::class,'mono_orientadores','orientadores_id','monografia_id')->withPivot('principal');
+        return $this->belongsToMany(Monografia::class, 'mono_orientadores', 'orientadores_id', 'monografia_id')->orderBy('orientadores.nome')->withPivot('principal');
     }
 }

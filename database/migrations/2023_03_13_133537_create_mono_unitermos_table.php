@@ -13,7 +13,7 @@ class CreateMonoUnitermosTable extends Migration
      */
     public function up()
     {
-        Schema::create('mono-unitermos', function (Blueprint $table) {
+        Schema::create('mono_unitermos', function (Blueprint $table) {
             $table->id();
             $table->foreignId('unitermo_id')->constrained('unitermos')->onDelete('cascade');;
             $table->foreignId('monografia_id')->constrained('monografias')->onDelete('cascade');;
@@ -32,7 +32,7 @@ class CreateMonoUnitermosTable extends Migration
     public function down()
     {
         Schema::disableForeignKeyConstraints();
-        Schema::dropIfExists('mono-unitermos');
+        Schema::dropIfExists('mono_unitermos');
         Schema::enableForeignKeyConstraints();
     }
 }

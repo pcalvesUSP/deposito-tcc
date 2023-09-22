@@ -4,7 +4,7 @@ namespace App\Rules;
 
 use Illuminate\Contracts\Validation\Rule;
 
-class CountWord implements Rule
+class CountWord500 implements Rule
 {
     /**
      * Create a new rule instance.
@@ -26,7 +26,7 @@ class CountWord implements Rule
     public function passes($attribute, $value)
     {
         $arrValue = explode(" ",$value);
-        return (count($arrValue) >= 300 && count($arrValue) <= 500);
+        return (count($arrValue) >= 1 && count($arrValue) <= 500);
     }
 
     /**
@@ -36,7 +36,7 @@ class CountWord implements Rule
      */
     public function message()
     {
-        return 'O :attribute deve conter entre 300 e 500 palavras.';
+        return 'O :attribute deve conter entre 1 e 500 palavras.';
         //return 'The :attribute must contain at least 500 words.';
     }
     

@@ -43,6 +43,11 @@
         background: rgb(247, 247, 252);
     }
 
+    #aprovacao_projeto {
+      background-color: #9b51e0;
+      color: white;
+    }
+
     input.campo, select.campo, textarea.campo, button {
         border-style: solid;
         border-color: blue;

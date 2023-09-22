@@ -19,7 +19,7 @@ class Unitermo extends Model
      * Relação Unitermos N:N
      */
     public function monografia() {
-        return $this->belongsToMany(Monografia::class, 'mono-unitermos','unitermo_id','monografia_id');
+        return $this->belongsToMany(Monografia::class, 'mono_unitermos','unitermo_id','monografia_id');
     }
 
     /**
@@ -27,6 +27,6 @@ class Unitermo extends Model
      * @param id Id da Monografia
      */
     static function excluirRegistroByMonografia($id) {
-        return DB::table('mono-unitermos')->where('monografia_id', $id)->delete();
+        return DB::table('mono_unitermos')->where('monografia_id', $id)->delete();
     }
 }

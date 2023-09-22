@@ -11,7 +11,7 @@ body *:not(html):not(style):not(br):not(tr):not(code) {
 body {
     -webkit-text-size-adjust: none;
     background-color: #ffffff;
-    color: #718096;
+    color: #96718c;
     height: 100%;
     line-height: 1.4;
     margin: 0;
@@ -28,7 +28,7 @@ blockquote {
 }
 
 a {
-    color: #3869d4;
+    color: #d438d1;
 }
 
 a img {
@@ -80,7 +80,7 @@ img {
     -premailer-cellpadding: 0;
     -premailer-cellspacing: 0;
     -premailer-width: 100%;
-    background-color: #054d96;
+    background-color: #960596;
     margin: 0;
     padding: 0;
     width: 100%;
@@ -100,14 +100,14 @@ img {
 .header {
     padding: 25px 0;
     text-align: center;
-    color: #d5e4f3;
+    color: #f3d5f1;
     font-size: 24px;
     font-weight: bold;
 }
 
 .header a {
     /*color: #3d4852;*/
-    color: #d5e4f3;
+    color: #f3d5f1;
     font-size: 24px;
     font-weight: bold;
     text-decoration: none;
@@ -137,9 +137,9 @@ img {
     -premailer-cellpadding: 0;
     -premailer-cellspacing: 0;
     -premailer-width: 100%;
-    background-color: #edf2f7;
-    border-bottom: 1px solid #edf2f7;
-    border-top: 1px solid #edf2f7;
+    background-color: #f7edf7;
+    border-bottom: 1px solid #f7edf7;;
+    border-top: 1px solid #f7edf7;;
     margin: 0;
     padding: 0;
     width: 100%;
@@ -150,7 +150,7 @@ img {
     -premailer-cellspacing: 0;
     -premailer-width: 570px;
     background-color: #ffffff;
-    border-color: #e8e5ef;
+    border-color: #eee5ef;
     border-radius: 2px;
     border-width: 1px;
     box-shadow: 0 2px 0 rgba(0, 0, 150, 0.025), 2px 4px 0 rgba(0, 0, 150, 0.015);
@@ -162,7 +162,7 @@ img {
 /* Subcopy */
 
 .subcopy {
-    border-top: 1px solid #e8e5ef;
+    border-top: 1px solid #efe5ed;
     margin-top: 25px;
     padding-top: 25px;
 }
@@ -184,13 +184,13 @@ img {
 }
 
 .footer p {
-    color: #b0adc5;
+    color: #c5adc5;
     font-size: 12px;
     text-align: center;
 }
 
 .footer a {
-    color: #b0adc5;
+    color: #c4adc5;
     text-decoration: underline;
 }
 
@@ -205,7 +205,7 @@ img {
 }
 
 .table th {
-    border-bottom: 1px solid #edeff2;
+    border-bottom: 1px solid #960596;
     margin: 0;
     padding-bottom: 8px;
 }
@@ -246,11 +246,11 @@ img {
 
 .button-blue,
 .button-primary {
-    background-color: #2d3748;
-    border-bottom: 8px solid #2d3748;
-    border-left: 18px solid #2d3748;
-    border-right: 18px solid #2d3748;
-    border-top: 8px solid #2d3748;
+    background-color: #472d48;
+    border-bottom: 8px solid #472d48;
+    border-left: 18px solid #472d48;
+    border-right: 18px solid #472d48;
+    border-top: 8px solid #472d48;
 }
 
 .button-green,
@@ -279,13 +279,13 @@ img {
 }
 
 .panel-content {
-    background-color: #edf2f7;
-    color: #718096;
+    background-color: #efe5ed;
+    color: #947196;
     padding: 16px;
 }
 
 .panel-content p {
-    color: #718096;
+    color: #947196;
 }
 
 .panel-item {

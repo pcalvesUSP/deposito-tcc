@@ -10,8 +10,6 @@ class MonoOrientadores extends Model
 {
     use HasFactory;
     protected $table = "mono_orientadores";
-    protected $primaryKey = ['orientadores_id', 'monografia_id'];
-    public $incrementing = false;
 
     /**
      * Apagar todos os registros de determinada monografia
@@ -19,6 +17,14 @@ class MonoOrientadores extends Model
      */
     static function excluirRegistroByMonografia($id) {
         return DB::table('mono_orientadores')->where('monografia_id', $id)->delete();
+    }
+
+    public function orientadores() {
+        return $this->hasMany(Orientador::class,'id','orientadores_id');
+    }
+
+    public function monografias() {
+        return $this->hasMany(Monografia::class,'id','monografia_id');
     }
 
 }

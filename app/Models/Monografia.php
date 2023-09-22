@@ -14,7 +14,7 @@ class Monografia extends Model
      * Relação Unitermos N:N
      */
     public function unitermos() {
-        return $this->belongsToMany(Unitermo::class, 'mono-unitermos', 'monografia_id', 'unitermo_id')->orderBy('unitermo')->withTrashed();
+        return $this->belongsToMany(Unitermo::class, 'mono_unitermos', 'monografia_id', 'unitermo_id')->orderBy('unitermo')->withTrashed();
     }
 
     /**
@@ -36,6 +36,20 @@ class Monografia extends Model
      */
     public function avaliacoes() {
         return $this->hasMany(Avaliacao::class, 'monografia_id', 'id')->orderBy('avaliacoes.dataAvaliacao', 'desc');
+    }
+
+    /**
+     * Relação 1:N
+     */
+    public function defesas() {
+        return $this->hasMany(Defesa::class);
+    }
+
+    /**
+     * Relação 1:N
+     */
+    public function bancas() {
+        return $this->hasMany(Banca::class);
     }
     
     /**
@@ -108,7 +122,7 @@ class Monografia extends Model
      * @param id INT Opcional - Id da Monografia
      * @param orientador_id INT Opcional Id do Orientador
      */
-    public function getMonografiaByFiltro($filtro, $id = 0, $orientador_id = 0) {
+    public function getMonografiaByFiltro($filtro, $id = 0, $orientador_id = 0, $status = null) {
         $alunos = array();
         $orientadores = array();
 
@@ -127,6 +141,12 @@ class Monografia extends Model
         if ($orientador_id > 0) {
             $build->where('o.id',$orientador_id);
         }
+
+        if (empty($status)) {
+            $build->where('monografias.status','<>','CONCLUIDO');
+        } else {
+            $build->where('monografias.status',$status);
+        }
         /*$build->where('alunos.nome','like','%'.$filtro.'%');
         $build->orWhere([['monografias.ano','=', $filtro]
                         ,['monografias.titulo','like','%'.$filtro.'%']
@@ -135,7 +155,6 @@ class Monografia extends Model
         $build->where('alunos.nome','like','%'.$filtro.'%');
         $build->orWhere('monografias.titulo','like','%'.$filtro.'%');
         $build->orWhere('monografias.ano',$filtro);
-        
         
         $build->orderBy("monografias.ano", "desc")->orderBy("alunos.nome")->orderBy("monografias.id");
         

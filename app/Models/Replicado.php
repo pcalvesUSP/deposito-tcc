@@ -25,10 +25,10 @@ class Replicado extends Model
                        , vpu.[dtafimvin] as dt_fimVinculo
                        , vpu.[nivpgm] as Nivel
                        , ep.codema as email 
-                   from [dbmaint].[VINCULOPESSOAUSP] as vpu 
-                   left join [dbmaint].[EMAILPESSOA] as ep on vpu.codpes = ep.codpes 
-                   where (vpu.codund = '7' OR vpu.codclg = '7') 
-                     and (vpu.[dtafimvin] is null OR dtafimvin >= CONVERT(DATE, '2999-01-01 00:00:00', 20)) 
+                   from [VINCULOPESSOAUSP] as vpu 
+                   left join [EMAILPESSOA] as ep on vpu.codpes = ep.codpes 
+                   where (vpu.codund in (".env("REPLICADO_CODUNDCLGS").") OR vpu.codclg in (".env("REPLICADO_CODUNDCLGS").")) 
+                     and (vpu.[dtafimvin] is null OR dtafimvin >= CONVERT(DATE, GETDATE(), 20)) 
                      and ep.stausp = 'S' ";
 
         if (!empty($tipoVinculo)) {
@@ -46,7 +46,7 @@ class Replicado extends Model
 
         $users = DB::connection('replicado')->select($query);
         
-        /*$db->table('[dbmaint].[VINCULOPESSOAUSP] as vpu')
+        /*$db->table('[VINCULOPESSOAUSP] as vpu')
                            ->leftJoin('[dbmaint].[EMAILPESSOA] as ep', 'vpu.codpes', '=', 'ep.codpes')
                            ->select('vpu.[codpes] as numUSP','vpu.[nompes] as nome','vpu.[tipvin] as vinculo'
                                    ,'vpu.[dtainivin] as dt_iniVinculo','vpu.[dtafimvin] as dt_fimVinculo'

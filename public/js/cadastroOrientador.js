@@ -3,12 +3,9 @@ $( document ).ready(function(){
 	if ($("#externo").is(":checked")) {
 		$("#divExt").css({"display":"inline"}); 
         $("#divNUSP").css({"display":"none"});
-	} else {
-		$("#divExt").css({"display":"none"}); 
-		$("#divNUSP").css({"display":"inline"});
 	}
 
-    $("#externo").click(function() {
+	$("#externo").click(function() {
         if ($(this).is(":checked")) { 
 			$("#divExt").css({"display":"inline"}); 
             $("#divNUSP").css({"display":"none"});
@@ -19,6 +16,12 @@ $( document ).ready(function(){
 			$("#divNUSP").css({"display":"inline"});
     	}
     });
+
+	if ($("#telefoneOrientador").val() >= 14) {
+        $("#telefoneOrientador").mask('(00)00000-00009');
+    } else {
+        $("#telefoneOrientador").mask("(00)0000-00009");
+    }
 	
 	$("#nuspOrientador").blur(function() {
 	    
@@ -35,12 +38,16 @@ $( document ).ready(function(){
 					if (obj.nome.length > 0) {
 						$("#nomeOrientador").val(obj.nome);
 						$("#emailOrientador").val(obj.email);
+						$("#telefoneOrientador").val(obj.telefone);
+						$("#instituicaoOrientador").val(obj.instituicao);
 						$("#externo").attr("disabled",true);
 						$("#salvar").trigger("focus");
 					} else {
 						alert("Erro ao buscar dados de Orientador, verifique o número digitado.");
 						$("#nomeOrientador").val("");
 						$("#emailOrientador").val("");
+						$("#telefoneOrientador").val("");
+						$("#instituicaoOrientador").val("");
 						$("#externo").attr("disabled",false);
 						$(this).trigger("focus");
 					}
@@ -70,6 +77,18 @@ $( document ).ready(function(){
 	  		$(this).val("");
 	  	}
 	  } 
+	});
+
+	$('#telefoneOrientador').blur(function(event) {
+        if($(this).val().length >= 14){ // Celular com 9 dígitos + 2 dígitos DDD e 4 da máscara
+           $(this).mask('(00)00000-00009');
+        } else {
+           $(this).mask('(00)0000-0009');
+        }
+    });
+
+	$('#area_atuacao').on("focus",function() {
+		$(this).val($(this).val().trim());
 	});
 	
 	function valEmail(email) {

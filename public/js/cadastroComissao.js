@@ -41,7 +41,7 @@ $( document ).ready(function(){
                     $("#emailComissao").val("");
                     $("#papeComissao").find("option[text=Selecione]").attr("selected", true);
                     $(this).trigger("focus");
-            }
+               }
 			});
 		} else {
 		    //alert("O N.o USP do Orientador deve ser informado");

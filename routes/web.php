@@ -21,8 +21,10 @@ Route::get('loginExterno',[App\Http\Controllers\LoginExtController::class,'index
 Route::post('loginExterno',[App\Http\Controllers\LoginExtController::class,'autenticar'])->name('login.externo');
 
 Route::prefix('alunos')->group(function() {
+    Route::get('disciplinaAluno/{nusp}',[App\Http\Controllers\AlunoController::class,'disciplinas']);
     Route::get('cadastroMonografia/{monografiaId?}/{ano?}/{msg?}', [App\Http\Controllers\AlunoController::class,'index'])->name('alunos.index');
     Route::put('corrigirMonografia/{id}', [App\Http\Controllers\MonografiaController::class,'update'])->name('alunos.corrigir');
+    Route::post('salvarBanca',[App\Http\Controllers\AlunoController::class,'salvarBanca'])->name('aluno.salvarBanca');
 });
 
 Route::post('salvarMonografia',[App\Http\Controllers\MonografiaController::class,'store'])->name('salvarMonografia');
@@ -34,6 +36,7 @@ Route::prefix('/graduacao')->group(function() {
     Route::resource('unitermos',App\Http\Controllers\UnitermoController::class);
     Route::resource('comissao',App\Http\Controllers\ComissaoController::class);
     Route::resource('banca', App\Http\Controllers\BancaController::class);
+    Route::put('indicaParecerista',[App\Http\Controllers\MonografiaController::class,'indicaParecerista'])->name('indicaParecerista');
     Route::post('banca/filtro', [App\Http\Controllers\BancaController::class,'buscaRegistroBanca'])->name('banca.filtro');
     Route::get('unitermo/{msg}',[App\Http\Controllers\UnitermoController::class,'index'])->name('unitermo.index2');
     Route::post('unitermo/busca/',[App\Http\Controllers\UnitermoController::class,'buscaUnitermos'])->name('unitermos.busca');
@@ -43,7 +46,9 @@ Route::prefix('/graduacao')->group(function() {
     Route::get('declaracao/moderador/{comissao}',[App\Http\Controllers\DeclaracoesController::class,'declaracaoModeradores'])->name('declaracao.moderador');
     Route::post('declaracao/aluno-tcc',[App\Http\Controllers\DeclaracoesController::class,'declaracaoAluno'])->name('declaracao.aluno');
     Route::delete('excluirMonografia/{id}',[App\Http\Controllers\MonografiaController::class,'destroy'])->name('graduacao.excluirMonografia');
-
+    Route::post('validaBanca',[App\Http\Controllers\MonografiaController::class,'validaDefesa'])->name('graduacao.validaBanca');
+    Route::get('aprovarCadastro/{id}/{aprovacao}',[App\Http\Controllers\OrientadorController::class,'aprovarCadastro'])->name('graduacao.aprova.cadastro');
+    Route::post('validaDefesa',[App\Http\Controllers\ComissaoController::class,'validaDefesa'])->name('graduacao.validaDefesa');
     Route::post('relatorio/aluno-orientador',[App\Http\Controllers\RelatoriosController::class,'alunoOrientador'])->name('relatorio.aluno-orientador');
     Route::post('relatorio/publicacao',[App\Http\Controllers\RelatoriosController::class,'publicaBDTA'])->name('relatorio.publicaBDTA');
     Route::post('relatorio/emissao-certificado',[App\Http\Controllers\RelatoriosController::class,'emissaoCertificado'])->name('relatorio.emissaoCertificado');
@@ -55,7 +60,7 @@ Route::prefix('/graduacao')->group(function() {
 
 Route::prefix('orientador')->group(function() {
     Route::get('/', [App\Http\Controllers\OrientadorController::class,'index'])->name('orientador.index');
-    Route::get('/edicao/{idMono}', [App\Http\Controllers\OrientadorController::class,'show'])->name('orientador.edicao');
+    Route::get('/edicao/{idMono}/{msg?}', [App\Http\Controllers\OrientadorController::class,'show'])->name('orientador.edicao');
     Route::get('/lista_monografia/',[App\Http\Controllers\OrientadorController::class,'listarMonografias'])->name('orientador.lista_monografia');
     Route::get('editar_orientador/{id}',[App\Http\Controllers\OrientadorController::class,'edit'])->name('orientador.edit');
     Route::put('alterar_orientador/{id}',[App\Http\Controllers\OrientadorController::class,'update'])->name('orientador.update');
@@ -66,6 +71,12 @@ Route::prefix('orientador')->group(function() {
     Route::post('/avaliacao/',[App\Http\Controllers\OrientadorController::class,'salvarAvaliacao'])->name('orientador.salvarParecer');
     Route::get('/ajaxBuscaDadosOrientador/{idOrient}',[App\Http\Controllers\OrientadorController::class,'ajaxBuscaDadosOrientador'])->name('orientador.ajaxbuscaorientador');
     Route::post('buscaOrientador',[App\Http\Controllers\OrientadorController::class,'getOrientadorByFiltro'])->name('busca.orientador');
+    Route::put('aprovaProjeto',[App\Http\Controllers\MonografiaController::class,'aprovaProjeto'])->name('orientador.aprovacao');
+});
+
+Route::prefix('comissao')->group(function() {
+    Route::get('/avaliacao/{idMonografia}/{acao}',[App\Http\Controllers\OrientadorController::class,'avaliacao'])->name('comissao.avaliacao');
+    Route::post('/avaliacao/',[App\Http\Controllers\OrientadorController::class,'salvarAvaliacao'])->name('comissao.salvarParecer');
 });
 
 Route::get('notificacao/{msg}',function($msg) {

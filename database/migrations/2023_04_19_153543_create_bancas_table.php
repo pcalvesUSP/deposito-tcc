@@ -15,14 +15,20 @@ class CreateBancasTable extends Migration
     {
         Schema::create('bancas', function (Blueprint $table) {
             $table->id();
+            $table->foreignId('monografia_id')->constrained('monografias');
             $table->unsignedBigInteger('codpes')->nullable();
             $table->string('nome',100);
             $table->string('email',100);
+            $table->string('telefone',15)->nullable();
+            $table->string('intituicao_vinculo',150);
+            $table->enum('papel',['PRESIDENTE','MEMBRO','SUPLENTE']);
+            $table->integer('ordem');
             $table->integer('ano');
+            $table->string('arquivo_declaracao',150)->nullable();
             $table->timestamps();
 
-            $table->unique(['codpes','ano']);
-            $table->unique(['email','ano']);
+            $table->unique(['email','monografia_id']);
+            $table->index('ano');
         });
     }
 
@@ -33,6 +39,8 @@ class CreateBancasTable extends Migration
      */
     public function down()
     {
+        Schema::disableForeignKeyConstraints();
         Schema::dropIfExists('bancas');
+        Schema::enableForeignKeyConstraints();
     }
 }

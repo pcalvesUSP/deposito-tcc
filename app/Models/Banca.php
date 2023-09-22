@@ -8,4 +8,11 @@ use Illuminate\Database\Eloquent\Model;
 class Banca extends Model
 {
     use HasFactory;
+
+    /**
+     * Relação N:1
+     */
+    public function monografias() {
+        return $this->belongsTo(Monografia::class)->withPivot('titulo');
+    }
 }

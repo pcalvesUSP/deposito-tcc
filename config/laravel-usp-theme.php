@@ -44,6 +44,14 @@ $orientadores = [
     ],
 ];
 
+$comissao = [
+    [
+        'text' => 'Listar Monografias',
+        'url' => '/orientador/lista_monografia',
+        'can' => 'userAvaliador'
+    ],
+];
+
 $graduacao = [
     [
         'text' => 'Listar Monografias',
@@ -100,6 +108,12 @@ $menu = [
         'text' => 'Alunos',
         'submenu' => $alunos,
         'can' => 'userAluno',
+    ],
+    [
+        'text' => 'Avaliadores',
+        'submenu' => $comissao,
+        //'url' => 'gerente',
+        'can' => 'userAvaliador',
     ],
     [
         'text' => 'Orientadores',

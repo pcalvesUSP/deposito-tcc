@@ -2,7 +2,6 @@
 
 @section('content')
 
-<p style="align:right"><a href="{{ route('banca.create') }}">Cadastrar Novo</a></p>
 <div class="erro" id="mensagem"> {{ empty($mensagem)?null:$mensagem }}</div>
 <h1>Cadastro de Banca</h1>
 
@@ -17,11 +16,11 @@
         </tr>
         </form>
         <tr>
-            <th style="width:10%;" class="tableData">Número USP</th>
+            <th style="width:5%;" class="tableData">Número USP</th>
             <th style="width:30%;" class="tableData">Nome</th>
-            <th style="width:30%;" class="tableData">Email</th>
-            <th style="width:10%;" class="tableData">Ano</th>
-            <th style="width:20%;" class="tableData" colspan="2">A&ccedil;&otilde;es</th>
+            <th style="width:40%;" class="tableData">Título Projeto</th>
+            <th style="width:10%;" class="tableData">Email</th>
+            <th style="width:10%;" class="tableData">A&ccedil;&otilde;es</th>
         </tr>
         
     </thead>
@@ -32,18 +31,17 @@
     @foreach ($listBanca as $banca)
     @if (!empty($banca->id))
     <tr>
-        <td style="width:10%;" class="tableData"> {{ !empty($banca->codpes)?$banca->codpes:'EXTERNO' }} </td>
+        <td style="width:5%;" class="tableData"> {{ !empty($banca->codpes)?$banca->codpes:'EXTERNO' }} </td>
         <td style="width:30%;" class="tableData"> {{ $banca->nome }} </td>
-        <td style="width:30%;" class="tableData"> {{ $banca->email }} </td>
-        <td style="width:10%;" class="tableData"> {{ $banca->ano }} </td>
-        <td style="width:10%;" class="tableData"><a href="{{ route('declaracao.moderador',['comissao'=>$banca->id]) }}" target="_blank">Declaração<br/>moderador</a></td>
-        <!--td style="width:6.66%;" class="tableData"><a href="{{ route('banca.edit', ['banca'=>$banca->id]) }}">Editar</a></td-->
+        <td style="width:40%;" class="tableData"> {{ $monografia[$banca->id]->titulo }} </td>
+        <td style="width:10%;" class="tableData"> {{ $banca->email }} </td>
         <td style="width:10%;" class="tableData">
-        <form id="deletebanca_{{ $banca->id }}" action={{ route('banca.destroy', ['banca'=>$banca->id])}} method="post"> 
-        @csrf
-        @method('DELETE') 
-        <input type="submit" value="Excluir" style="background-color:transparent;" onmouseover="return $(this).css({'color':'blue','text-decoration':'underline'})" onmouseout="return $(this).css({'color':'black','text-decoration':'none'})">
-        </form></td>
+            @if (!empty($banca->arquivo_declaracao))
+            <a href="declaracao_banca/{{ $banca->arquivo_declaracao }}" target="_blank">Declaração</a>
+            @else
+            Não participou da Banca    
+            @endif
+        </td>
     </tr>
     @endif
     @endforeach

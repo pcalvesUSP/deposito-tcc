@@ -1,8 +1,8 @@
 $(document).ready(function(){
     
-    $("#trabDupla").hide();
+    //$("#trabDupla").hide();
 
-    if ($("#dupla").is(':checked')) {
+    /*if ($("#dupla").is(':checked')) {
         $("#trabDupla").show();
     } 
 
@@ -40,9 +40,67 @@ $(document).ready(function(){
       $("#novosOrientadores").html(strNovo);
       return false;
 
+    });*/
+
+    $('#aprovacao_projeto').click(function() {
+        //$('#formMonografia').attr('action', '/orientador/aprovaProjeto/'+$('#idTcc').val());
+        $('#formMonografia').submit();
+    });
+
+    $('#titulo').on('focus',function() {
+        $(this).val($(this).val().trim());
+    });
+
+    $('#resumo').on('focus',function() {
+        $(this).val($(this).val().trim());
+    });
+
+    $('#introducao').on('focus',function() {
+        $(this).val($(this).val().trim());
+    });
+
+    $('#objetivo').on('focus',function() {
+        $(this).val($(this).val().trim());
+    });
+
+    $('#material_metodo').on('focus',function() {
+        $(this).val($(this).val().trim());
+    });
+
+    $('#resultado_esperado').on('focus',function() {
+        $(this).val($(this).val().trim());
+    });
+
+    $('#aspecto_etico').on('focus',function() {
+        $(this).val($(this).val().trim());
+    });
+
+    $('#referencias').on('focus',function() {
+        $(this).val($(this).val().trim());
     });
 
     //$('#unitermo1').select2();
+
+    if ($('#cadastroUnitermo1').is(':checked')) {
+        $("#txtUnitermo1").show();
+        $('#unitermo1').prop( "disabled", true );
+    }
+    if ($('#cadastroUnitermo2').is(':checked')) {
+        $("#txtUnitermo2").show();
+        $('#unitermo2').prop( "disabled", true );
+    }
+    if ($('#cadastroUnitermo3').is(':checked')) {
+        $("#txtUnitermo3").show();
+        $('#unitermo3').prop( "disabled", true );
+    }
+    if ($('#cadastroUnitermo4').is(':checked')) {
+        $("#txtUnitermo4").show();
+        $('#unitermo4').prop( "disabled", true );
+    }
+    if ($('#cadastroUnitermo5').is(':checked')) {
+        $("#txtUnitermo5").show();
+        $('#unitermo5').prop( "disabled", true );
+    }
 
     $('#cadastroUnitermo1').click(function() {
         if ($(this).is(':checked')) {

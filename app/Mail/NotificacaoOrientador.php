@@ -14,17 +14,19 @@ class NotificacaoOrientador extends Mailable
     public $textoMensagem;
     public $assuntoMensagem;
     public $nome;
+    public $attach;
 
     /**
      * Create a new message instance.
      *
      * @return void
      */
-    public function __construct($textoMsg, $assuntoMsg, $nome)
+    public function __construct($textoMsg, $assuntoMsg, $nome, $attach = null)
     {
         $this->textoMensagem = $textoMsg;
         $this->assuntoMensagem = $assuntoMsg;
         $this->nome = $nome;
+        $this->attach = $attach;
     }
 
     /**
@@ -34,6 +36,13 @@ class NotificacaoOrientador extends Mailable
      */
     public function build()
     {
-        return $this->markdown('emails.mensagem_orientador')->subject("[SISTEMA DEPÓSITO TCC] ".$this->assuntoMensagem);
+        if (!empty($this->attach)) {
+            return $this->markdown('emails.mensagem_orientador')
+                        ->subject("[SISTEMA DEPÓSITO TCC] ".$this->assuntoMensagem)
+                        ->attach($this->attach);
+        } else {
+            return $this->markdown('emails.mensagem_orientador')
+                        ->subject("[SISTEMA DEPÓSITO TCC] ".$this->assuntoMensagem);
+        }
     }
 }

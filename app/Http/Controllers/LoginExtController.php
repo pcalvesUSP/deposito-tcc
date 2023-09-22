@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
 use \App\Models\User;
+use \App\Models\Orientador;
 
 class LoginExtController extends Controller
 {
@@ -38,16 +39,19 @@ class LoginExtController extends Controller
 
         $pass = crypt($request->input('senha'),"$5&jj");
         
-        $user = User::where('email',$request->input('usuario'))->where('password',$pass)->get();
+        $user = Orientador::where('email',$request->input('usuario'))->where('aprovado',true)->get();
+        if (!$user->isEmpty())
+            $user = User::where('email',$request->input('usuario'))->where('password',$pass)->get();
 
         if ($user->isEmpty()) {
-            print "<script>alert('Erro ao realizar o login'); </script>";
+            return "<script>alert('Erro ao realizar o login'); window.location='".route('home')."'</script>";
         } else {
             $user = $user->first();
             Auth::login($user);
-
             $dadosLogin = $user->verificaIdentidade();
+            session(['orientadorExterno' => 1]);
         }
+        
         return redirect(route('home'));
     }
 }

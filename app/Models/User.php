@@ -83,21 +83,21 @@ class User extends Authenticatable
         $retArray = array();
         $retArray["objUser"] = auth()->user();
         
-        $user = ["name"     => auth()->user()->name
-                ,"email"    => auth()->user()->email
-                ,"codpes"   => auth()->user()->codpes
+        $user = ["name"     => $this->name
+                ,"email"    => $this->email
+                ,"codpes"   => $this->codpes
         ];
-        $retArray["usuarioLogado"] = auth()->user();
+        $retArray["usuarioLogado"] = $user;
 
         if (empty(auth()->user()->codpes)) {   
 
-            if (!auth()->user()->hasRole('orientador')) {
-                if (Orientador::where('email', auth()->user()->email)->count() > 0) {
+            if (Orientador::where('email', auth()->user()->email)->count() > 0) {
+                
+                if (!auth()->user()->hasRole('orientador'))
                     auth()->user()->assignRole('orientador');
                             
-                    if (!auth()->user()->can('userOrientador'))
-                        auth()->user()->givePermissionTo('userOrientador');
-                }
+                if (!auth()->user()->can('userOrientador'))
+                    auth()->user()->givePermissionTo('userOrientador');
             }
 
         } else {
@@ -127,9 +127,10 @@ class User extends Authenticatable
 
                     break;
                 case "SERVIDOR":
+                case "SEM VINCULO":
 
-                    if (Orientador::where("codpes",auth()->user()->codpes)->count() > 0) {
-                        if (User::where('codpes',$user['codpes'])->count() == 0) {
+                    if (Orientador::where("email",auth()->user()->email)->count() > 0) {
+                        if (User::where('email',$user['email'])->count() == 0) {
                             User::create($user);
                         }
                         
@@ -138,6 +139,18 @@ class User extends Authenticatable
                             
                         if (!auth()->user()->can('userOrientador'))
                             auth()->user()->givePermissionTo('userOrientador');
+
+                    } elseif (Comissao::where("codpes",auth()->user()->codpes)->count() > 0) {
+                        if (User::where('codpes',$user['codpes'])->count() == 0) {
+                            User::create($user);
+                        }
+
+                        if (!auth()->user()->hasRole('avaliador')) 
+                            auth()->user()->assignRole('avaliador');
+                            
+                        if (!auth()->user()->can('userAvaliador'))
+                            auth()->user()->givePermissionTo('userAvaliador');
+                        
                     } else {
                         
                         $arrayGerentes = explode(',',env('SENHAUNICA_GERENTES'));

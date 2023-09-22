@@ -17,12 +17,25 @@ class CreateMonografiasTable extends Migration
             $table->id();
             $table->timestamps();
             $table->boolean('dupla')->default(0);
-            $table->enum('status', ['EM ANDAMENTO', 'CONCLUIDO'])->default("EM ANDAMENTO");
-            $table->text('titulo');
-            $table->text('resumo');
+            $table->enum('status', ['AGUARDANDO APROVACAO ORIENTADOR'
+                                   ,'AGUARDANDO AVALIACAO'
+                                   ,'AGUARDANDO CORREÇÃO DO PROJETO'
+                                   ,'AGUARDARDANDO ARQUIVO TCC'
+                                   ,'AGUARDANDO VALIDACAO DA BANCA'
+                                   ,'AGUARDANDO NOTA'
+                                   ,'CONCLUIDO']);
+            $table->string('titulo',255);
+            $table->string('resumo',255);
+            $table->text('introducao');
+            $table->text('objetivo');
+            $table->text('material_metodo');
+            $table->text('resultado_esperado');
+            $table->text('aspecto_etico');
+            $table->text('referencias');
             $table->boolean('publicar')->nullable();
-            $table->string('template_apres', 250);
-            $table->string('ano', 4);
+            $table->string('path_arq_tcc', 250)->nullable();
+            $table->integer('ano');
+            $table->integer('semestre');
         });
     }
 

@@ -15,7 +15,7 @@ class CreateAreastematicasTable extends Migration
     {
         Schema::create('areastematicas', function (Blueprint $table) {
             $table->id();
-            $table->string('descricao',100);
+            $table->char('descricao',100);
             $table->timestamps();
             $table->softDeletes();
         });
@@ -33,13 +33,6 @@ class CreateAreastematicasTable extends Migration
     public function down()
     {
         Schema::disableForeignKeyConstraints();
-        
-        Schema::table('monografias', function (Blueprint $table) {
-            $table->dropForeign('monografias_area_tematica_foreign');
-
-            $table->dropColumn('area_tematica');
-        });
-
         Schema::dropIfExists('areastematicas');
         Schema::enableForeignKeyConstraints();
     }

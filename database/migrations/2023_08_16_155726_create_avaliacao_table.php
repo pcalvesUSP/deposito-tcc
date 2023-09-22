@@ -4,7 +4,7 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-class CreateAvaliacoesTable extends Migration
+class CreateAvaliacaoTable extends Migration
 {
     /**
      * Run the migrations.
@@ -16,18 +16,14 @@ class CreateAvaliacoesTable extends Migration
         Schema::create('avaliacoes', function (Blueprint $table) {
 
             $table->id();
-            $table->unsignedBigInteger('orientadores_id');
-            $table->unsignedBigInteger('monografia_id');
+            $table->foreignId('monografia_id')->constrained('monografias');
+            $table->foreignId('comissoes_id')->constrained('comissoes');
             $table->dateTime('dataAvaliacao');
-            $table->enum('status',['DEVOLVIDO','CORRIGIDO','APROVADO','REPROVADO']);
+            $table->enum('status',['AGUARDANDO','DEVOLVIDO','CORRIGIDO','APROVADO']);
             $table->text('parecer')->nullable();
             $table->timestamps();
 
-            $table->foreign(['orientadores_id','monografia_id'])
-                  ->references(['orientadores_id','monografia_id'])
-                  ->on('mono_orientadores')->constrained();
-
-            $table->unique(['orientadores_id', 'monografia_id', 'dataAvaliacao']);
+            $table->unique(['monografia_id', 'comissoes_id', 'dataAvaliacao']);
         });
     }
 
