@@ -20,6 +20,7 @@ use App\Mail\NotificacaoOrientador;
 use Uspdev\Replicado\Pessoa;
 
 use App\Rules\verificaBanca;
+use App\Rules\VerificaDatas;
 
 class ComissaoController extends Controller
 {
@@ -30,7 +31,10 @@ class ComissaoController extends Controller
      */
     public function index(String $msg = null)
     {
-        $listComissao = Comissao::all();
+        $listComissao = Comissao::where('dtInicioMandato','<=', date_create('now')->format('Y-m-d'))
+                                ->where('dtFimMandato', '>=', date_create('now')->format('Y-m-d'))
+                                ->get();
+        
         return view('cadastro-comissao', ['mensagem' => $msg, 'listComissao' => $listComissao]);
     }
 
@@ -52,11 +56,13 @@ class ComissaoController extends Controller
      */
     public function store(Request $request)
     {
-        $rule = ["nuspComissao" => ["required","numeric"]
-                ,"nomeComissao" => ["required","min:3","max:100"]
-                ,"emailComissao"=> ["required","email","max:100"]
-                ,"papelComissao"=> ["required"]
-                ,"assinatura"   => ["image","file"]
+        $rule = ["nuspComissao"     => ["required","numeric"]
+                ,"nomeComissao"     => ["required","min:3","max:100"]
+                ,"emailComissao"    => ["required","email","max:100"]
+                ,"papelComissao"    => ["required"]
+                ,"dtInicioMandato"  => ["required","date_format:d/m/Y"]
+                ,"dtFimMandato"     => ["required","date_format:d/m/Y"]
+                ,"assinatura"       => ["image","file"]
                 ];
 
         $messages = ["required"         => "O campo :attribute deve ser preenchido"
@@ -76,13 +82,61 @@ class ComissaoController extends Controller
             $arquivo->move(public_path('upload/assinatura'),$arquivo->getClientOriginalName());
             $upload = true;                
         }       
+
+        $dtIni = explode("/",$request->input('dtInicioMandato'));
+        $dtFim = explode("/",$request->input('dtFimMandato'));
+
+        $comissaoDel = Comissao::where('codpes',$request->input('nuspComissao'))
+                            ->where('papel',$request->input('papelComissao'))
+                            ->onlyTrashed()
+                            ->get();
+
+        $comissaoId = null;
+
+        if ($comissaoDel->isEmpty()) {
+            $comissaoDel = Comissao::where('codpes',$request->input('nuspComissao'))
+                                ->where('papel',$request->input('papelComissao'))
+                                ->where('dtFimMandato','<=', date_create('now')->format('Y/m/d'))
+                                ->get();
+            
+            if ($comissaoDel->isEmpty()) {
+                $objComissao = new Comissao;
+            } else {
+                $objComissao = $comissaoDel->first();
+                $comissaoId = $objComissao->id;
+            }
+        } else {
+            $objComissao = $comissaoDel->first();
+            $comissaoId = $objComissao->id;
+        }
         
-        $objComissao = new Comissao;
-        $objComissao->codpes = $request->input('nuspComissao');
-        $objComissao->nome = $request->input('nomeComissao');
-        $objComissao->email = $request->input('emailComissao');
-        $objComissao->papel = $request->input('papelComissao');
-        $objComissao->assinatura = ($upload)?$arquivo->getClientOriginalName():null;
+        if (empty($comissaoId)) {
+            $coordenador = Comissao::where('dtInicioMandato','<=',date_create('now')->format('Y/m/d'))
+                                ->where('dtFimMandato', '>=', date_create('now')->format('Y/m/d'))
+                                ->where('papel','COORDENADOR');
+        } else {
+            $coordenador = Comissao::where('dtInicioMandato','<=',date_create('now')->format('Y/m/d'))
+                                    ->where('dtFimMandato', '>=', date_create('now')->format('Y/m/d'))
+                                    ->where('papel','COORDENADOR')
+                                    ->where('id','<>',$comissaoId);
+        }
+        if ($coordenador->count() > 0) {
+            return Redirect::back()
+                        ->withErrors(['papelComissao'=>'Já existe um coordenador cadastrado, não é permitido haver dois.'])
+                        ->withInput();
+        }
+
+        if ($objComissao->isTrashed()) {
+            $objComissao->restore();
+        }
+
+        $objComissao->codpes            = $request->input('nuspComissao');
+        $objComissao->nome              = $request->input('nomeComissao');
+        $objComissao->email             = $request->input('emailComissao');
+        $objComissao->papel             = $request->input('papelComissao');
+        $objComissao->dtInicioMandato   = $dtIni[2]."/".$dtIni[1]."/".$dtIni[0];
+        $objComissao->dtFimMandato      = $dtFim[2]."/".$dtFim[1]."/".$dtFim[0];
+        $objComissao->assinatura        = ($upload)?$arquivo->getClientOriginalName():null;
         $objComissao->save();
 
         return redirect()->route('comissao.index');
@@ -108,6 +162,10 @@ class ComissaoController extends Controller
     public function edit($id)
     {
         $objComissao = Comissao::find($id);
+
+        $objComissao->dtInicioMandato = date_create($objComissao->dtInicioMandato);
+        $objComissao->dtFimMandato = date_create($objComissao->dtFimMandato);
+        
         return view('form-cadastro-comissao',['objComissao'=>$objComissao]);
     }
 
@@ -120,10 +178,12 @@ class ComissaoController extends Controller
      */
     public function update(Request $request, $id)
     {
-        $rule = ["nomeComissao" => ["required","min:3","max:100"]
-                ,"emailComissao"=> ["required","email","max:100"]
-                ,"papelComissao"=> ["required"]
-                ,"assinatura"   => ["image","file"]
+        $rule = ["nomeComissao"     => ["required","min:3","max:100"]
+                ,"emailComissao"    => ["required","email","max:100"]
+                ,"papelComissao"    => ["required"]
+                ,"dtInicioMandato"  => ["required","date_format:d/m/Y"]
+                ,"dtFimMandato"     => ["required","date_format:d/m/Y"]
+                ,"assinatura"       => ["image","file"]
                 ];
 
         $messages = ["required"         => "O campo :attribute deve ser preenchido"
@@ -144,10 +204,30 @@ class ComissaoController extends Controller
             $upload = true;
         } 
 
+        $dtIni = explode("/",$request->input('dtInicioMandato'));
+        $dtFim = explode("/",$request->input('dtFimMandato'));
+
+        if ($request->input('papelComissao') == 'COORDENADOR') {
+            $coordenador = Comissao::where('dtInicioMandato','<=',date_create('now')->format('Y/m/d'))
+                                ->where('dtFimMandato', '>=', date_create('now')->format('Y/m/d'))
+                                ->where('papel','COORDENADOR')
+                                ->where('id','<>',$id)
+                                ->count();
+
+            if ($coordenador > 0) {
+                return Redirect::back()
+                            ->withErrors(['papel'=>'Já existe um coordenador cadastrado'])
+                            ->withInput();
+            }
+        }
+
         $objComissao = Comissao::find($id);
-        $objComissao->nome = $request->input('nomeComissao');
-        $objComissao->email = $request->input('emailComissao');
-        $objComissao->papel = $request->input('papelComissao');
+        $objComissao->nome              = $request->input('nomeComissao');
+        $objComissao->email             = $request->input('emailComissao');
+        $objComissao->papel             = $request->input('papelComissao');
+        $objComissao->dtInicioMandato   = $dtIni[2]."/".$dtIni[1]."/".$dtIni[0];
+        $objComissao->dtFimMandato      = $dtFim[2]."/".$dtFim[1]."/".$dtFim[0];
+
         if ($upload) {
             if (!empty($objComissao->assinatura) && 
                 $arquivo->getClientOriginalName() != $objComissao->assinatura) 
@@ -156,7 +236,9 @@ class ComissaoController extends Controller
             }
             $objComissao->assinatura = $arquivo->getClientOriginalName();
         }
-        $objComissao->update();
+        
+        if ($objComissao->update())
+            print "<script>alert('Correção efetuada'); </script>";
 
         return redirect()->route('comissao.index');
     }
@@ -235,18 +317,24 @@ class ComissaoController extends Controller
 
         if ($request->filled('membro')) {
             if (!is_array($request->input('membro'))) {
-                return Redirect::back()->withErrors(['msg' => 'Erro ao enviar o formulário']);
+                return Redirect::back()
+                            ->withErrors(['msg' => 'Erro ao enviar o formulário'])
+                            ->withInput();
             }
             if (count($request->input('membro')) < 3) {
-                return Redirect::back()->withErrors(['msg' => 'É preciso selecionar ao menos 3 membros.']);
+                return Redirect::back()
+                            ->withErrors(['msg' => 'É preciso selecionar ao menos 3 membros.'])
+                            ->withInput();
             }
         } else {
-            return Redirect::back()->withErrors(['msg' => 'É preciso selecionar ao menos 3 membros.']);
+            return Redirect::back()
+                        ->withErrors(['msg' => 'É preciso selecionar ao menos 3 membros.'])
+                        ->withInput();
         }
 
         $txtMensagem = "Prezado [NOME_BANCA],                                                     
         ";
-        $txtMensagem.= "Você está participou da banca de apresentação do Trabalho de Conclusão de Curso do(a) aluno(a)
+        $txtMensagem.= "Você participou da banca de apresentação do Trabalho de Conclusão de Curso do(a) aluno(a)
         [NOME_ALUNO], título [TITULO], do curso de Farmácia da Faculdade de Ciências Farmacêuticas
         da USP.                                                                               
         ";
@@ -255,23 +343,32 @@ class ComissaoController extends Controller
         $txtMensagem.= "Estamos à disposição para qualquer dúvida.                   
         ";
         
-        foreach ($request->input('membro') as $membro) {
+        $paramPdf = array();
+
+        $monografia = Monografia::with(['orientadores'])->find($request->input('idMonografia'));
+        $defesa = Defesa::select('dataEscolhida')->where('monografia_id',$request->input('idMonografia'))->get();
+        $aluno = Aluno::where('monografia_id',$request->input('idMonografia'));
+        $comissao = Comissao::where('papel','COORDENADOR')
+                            ->where('dtInicioMandato','<=', date_create('now')->format('Y-m-d'))
+                            ->where('dtFimMandato', '>=', date_create('now')->format('Y-m-d'))
+                            ->get();
+
+        $dataDefesa = date_create($defesa->first()->dataEscolhida);
+
+        foreach ($request->input('membro') as $key=>$membro) {
 
             $membroBanca = Banca::find($membro);
-            $monografia = Monografia::find($membroBanca->monografia_id);
-            $defesa = Defesa::select('dataEscolhida')->where('monografia_id',$monografia->id)->get();
-            $aluno = Aluno::where('monografia_id',$monografia->id);
-
-            $dataDefesa = date_create($defesa->first()->dataEscolhida);
-
-            $paramPdf = ['nome_membro'     => $membroBanca->nome
-                        ,'papel_membro'    => $membroBanca->papel
-                        ,'nome_aluno'      => $aluno->first()->nome
-                        ,'titulo_trabalho' => $monografia->titulo
-                        ,'data_defesa'     => $dataDefesa->format('d/m/Y')
-                        ,'hora_defesa'     => $dataDefesa->format('H:i')];
+            $paramPdf = ['nome_membro'        => $membroBanca->nome
+                        ,'papel_membro'       => $membroBanca->papel
+                        ,'nome_aluno'         => $aluno->first()->nome
+                        ,'titulo_trabalho'    => $monografia->titulo
+                        ,'data_defesa'        => $dataDefesa->format('d/m/Y')
+                        ,'hora_defesa'        => $dataDefesa->format('H:i')
+                        ,'nomeCoordenador'    => $comissao->first()->nome
+                        ,'pathImageAssinatura'=> public_path()."/upload/assinatura/".$comissao->first()->assinatura
+                        ];
             
-            $nomeArq = "decaracao_defesa_".$membro."-".date('Y').".pdf";
+            $nomeArq = "declaracao_defesa_".$membro."-".date('Y').".pdf";
 
             $declaracao = Pdf::loadView('templates_pdf.declaracao-defesa-banca', $paramPdf);
             $declaracao->save(public_path()."/declaracao_banca/".$nomeArq);
@@ -279,20 +376,33 @@ class ComissaoController extends Controller
             $membroBanca->arquivo_declaracao = $nomeArq;
             $membroBanca->update();
 
-            $monografia->status = "CONCLUIDO";
+            $monografia->status = "AGUARDANDO NOTA DO TCC";
             $monografia->update();
 
             $body = str_replace("[NOME_BANCA]",$membroBanca->nome,$txtMensagem);
             $body = str_replace("[NOME_ALUNO]",$aluno->first()->nome,$body);
             $body = str_replace("[TITULO]",$monografia->titulo,$body);
             
-            Mail::to("pcalves@usp.br", $membroBanca->nome)
-                    ->send(new NotificacaoOrientador($body, "[".config('app.name')."] Certificado de participação em Banca TCC ".$monografia->titulo, $membroBanca->nome, public_path()."/declaracao_banca/".$nomeArq));
-            /*Mail::to($membroBanca->email, $membroBanca->nome)
-                  ->send(new NotificacaoOrientador($body, "[".config('app.name')."] Certificado de participação em Banca TCC ".$monografia->titulo, $membroBanca->nome, public_path()."/declaracao_banca/".$nomeArq));*/
+            /*Mail::to("pcalves@usp.br", $membroBanca->nome)
+                    ->send(new NotificacaoOrientador($body, "Certificado de participação em Banca TCC ".$monografia->titulo, $membroBanca->nome, public_path()."/declaracao_banca/".$nomeArq));*/
+            Mail::to($membroBanca->email, $membroBanca->nome)
+                  ->send(new NotificacaoOrientador($body, "Certificado de participação em Banca TCC ".$monografia->titulo, $membroBanca->nome, public_path()."/declaracao_banca/".$nomeArq));
 
         }
 
+        $txtMensagem = "A defesa do TCC projeto **".$monografia->titulo."** occoreu em *".$paramPdf['data_defesa']." às ".$paramPdf['hora_defesa']."*              
+        ";
+        $txtMensagem.= "É preciso informar a nota do TCC no sistema.                                                                                              
+        ";
+        $txtMensagem.= "**Você tem 3 dias úteis para informar**                                                                                                   
+        ";
+        foreach($monografia->orientadores()->get() as $orientador) {
+             /*Mail::to("pcalves@usp.br", $orientador->nome)
+                 ->send(new NotificacaoOrientador($txtMensagem, "Existem notas a serem informadas para o TCC ".$monografia->titulo, $orientador->nome));*/
+             Mail::to($orientador->email, $orientador->nome)
+                 ->send(new NotificacaoOrientador($txtMensagem, "Existem notas a serem informadas para o TCC ".$monografia->titulo, $orientador->nome));
+        }
+        
         return Redirect::back();
         
     }

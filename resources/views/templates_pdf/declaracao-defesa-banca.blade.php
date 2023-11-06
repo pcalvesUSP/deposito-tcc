@@ -16,7 +16,12 @@
         <p style="text-align: justify; margin: 0px 50px 0x 50px;">Declaro que o(a) Prof(a). Dr(a). {{ $nome_membro }} {{ $papel_membro=='PRESIDENTE'?'atuou como orientador(a) e':null }} participou da Comissão Julgadora do Trabalho de Conclusão do Curso de 
         Graduação em Farmácia-Bioquímica do(a) aluno(a) {{ $nome_aluno }}, intitulado “{{ $titulo_trabalho }}”, da Faculdade de Ciências Farmacêuticas da 
         Universidade de São Paulo, em sessão virtual no dia {{ $data_defesa }}, às {{ $hora_defesa }} horas.
-
         </p>
+        <p>&nbsp;</p>
+        <p>&nbsp;</p>
+        <p>&nbsp;</p>
+        <p>&nbsp;</p>
+        <p style="text-align: center"><img src="{{$pathImageAssinatura}}" width="250px"></p>
+        <p style="text-align: center">{{$nomeCoordenador}}<br/>Coordenador(a) da Comissão de TCC</p>
     </body>
 </html>

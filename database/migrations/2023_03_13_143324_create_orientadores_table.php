@@ -20,12 +20,14 @@ class CreateOrientadoresTable extends Migration
             $table->string('nome', 80);
             $table->string('email',100);
             $table->string('instituicao_vinculo',150);
+            $table->string('comprovante_vinculo',150)->nullable();
             $table->string('telefone',15)->nullable();
             $table->string('password', 255)->nullable();
             $table->boolean('externo')->default(false);
             $table->boolean('aprovado')->default(false);
             $table->text('area_atuacao')->nullable();
             $table->string('link_lattes',255)->nullable();
+            $table->unsignedBigInteger('nusp_aprovador')->nullable();
             $table->timestamps();
             $table->softDeletes();
 

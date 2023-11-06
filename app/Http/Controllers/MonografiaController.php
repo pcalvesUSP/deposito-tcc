@@ -22,11 +22,11 @@ use App\Models\MonoUnitermos;
 use App\Models\Comissao;
 use App\Models\Defesa;
 use App\Models\Banca;
+use App\Models\Nota;
 
 use Uspdev\Replicado\Pessoa;
 
-use App\Rules\CountWord500;
-use App\Rules\CountWord250;
+use App\Rules\CountWord1000;
 use App\Rules\VerificaDatas;
 
 use App\Mail\NotificacaoOrientador;
@@ -56,78 +56,73 @@ class MonografiaController extends Controller
      */
     public function index($monografia_id = 0, $ano = null, $msg = null, $acao = null)
     {        
-        $dadosParam = Parametro::getDadosParam();
+        $dadosParam = Parametro::getDadosParam($monografia_id);
         if ($dadosParam === false && (auth()->user()->hasRole('orientador') || auth()->user()->hasRole('aluno') || auth()->user()->hasRole('avaliador'))) {
             return "<script> alert('M17-Sistema não parametrizado. Entre em contato com a Graduação'); 
                                         window.location.assign('".route('home')."');
-                        </script>";
+                    </script>";
         }
 
         $dataAtual = date_create('now');
-        $uploadTcc = false;
-        $readonly = true;
-        $publicar = false;
+        $semestreAtual = 1;
+        if ($dataAtual->format('n') > 6)
+            $semestreAtual = 2;
+        
+        $anoAtual = $dataAtual->format('Y');
+
+        $listaParam = Parametro::select('id','ano','semestre')->whereNull('codpes')->orderBy('ano')->orderBy('semestre')->distinct()->get();
+        $paramUtilizado = $dadosParam->semestre."-".$dadosParam->ano;
+
+        $uploadTcc = 0;
+        $readonly = 1;
+        $publicar = 0;
         $userLogado = null;
         $msgAbertura = null;
-        $avaliar = false;
-        $aprovOrientador = false;
-        $edicao = false;
-        $validacaoTcc = false;
+        $avaliar = 0;
+        $aprovOrientador = 0;
+        $edicao = 0;
+        $validacaoTcc = 0;
+        $aprovadoOrientador = 0;
+        $edicao = 0;
+        $userLogado = null;
+        $modificaParametro = 0;
+        $aprovaBanca = 0;
         
-        if (auth()->user()->hasRole('orientador') && !auth()->user()->can('admin')) {
-            $userLogado = "Orientador";
-
-            if ($dataAtual >= $dadosParam->dataAberturaDocente && 
-                $dataAtual <= $dadosParam->dataFechamentoDocente ) {
-                $userLogado = "Orientador";
-                $aprovOrientador = true;
-                $readonly = false;
-            } 
-
-        } elseif (auth()->user()->hasRole('avaliador')) {
-            $userLogado = "Avaliador";
-
-            if ($dataAtual >= $dadosParam->dataAberturaAvaliacao && 
-                $dataAtual <= $dadosParam->dataFechamentoAvaliacao ) {
-             
-                $avaliar = true;
-            }
+        
+        if (auth()->user()->hasRole('aluno')) {
+            $userLogado.= "Aluno";
             
-        } elseif (auth()->user()->hasRole('aluno')) {
-            $userLogado = "Aluno";
-            if ($dataAtual >= $dadosParam->dataAberturaUploadTCC && $dataAtual <= $dadosParam->dataFechamentoUploadTCC) {
-                $uploadTcc = true;
-            }
-
-            if ($dataAtual >= $dadosParam->dataAberturaDiscente || 
-                $dataAtual <= $dadosParam->dataFechamentoDiscente) {
-                $readonly = false;
-            }
-            
-        } elseif (auth()->user()->hasRole('graduacao')) {
-            $userLogado = "Graduacao";
-            $publicar = true;
-            $readonly = false;
-            $edicao = true;
-        } elseif (auth()->user()->can('admin')) {
-            $userLogado = "Admin";
-            $publicar = true;
-            $readonly = false;
+        } 
+        if (auth()->user()->hasRole('graduacao')) {
+            $userLogado.= "Graduacao";
+            $publicar = 1;
+            $readonly = 0;
+            $edicao = 1;
+        } 
+        if (auth()->user()->can('userComissao')) {
+            $userLogado.= "Comissao";
+        }
+        if (auth()->user()->can('admin')) {
+            $userLogado.= "Admin";
+            $publicar = 1;
+            $readonly = 0;
+            $edicao = 1;
         }
 
         $numUSPAluno = 0;
         $nomeAluno = null;
         $dadosMonografia = null;
         $dadosAlunoGrupo = null;
-        $indicarParecerista = false;
+        $indicarParecerista = 0;
         $dadosMonografia = [];
         $dadosParecerista = [];
         $idParecerista = 0;
         $correcaoSolicitada = null;
         $dadosBanca = null;
         $dadosUnitermos = null;
+        $inserirNota = 0;
 
-        $dadosDefesa = Defesa::where("monografia_id",0)->get();
+        $dadosDefesa = Defesa::where("monografia_id",$monografia_id)->get();
         
         if ($monografia_id > 0) {
             if (empty($ano)) {
@@ -143,7 +138,6 @@ class MonografiaController extends Controller
             }
 
             $dadosAlunoGrupo = Aluno::where('monografia_id',$monografia_id)->get();
-            $dadosDefesa = Defesa::where("monografia_id",$monografia_id)->get();
             $dadosUnitermos = $dadosMonografia->first()->unitermos;
 
             $numUSPAluno = $dadosAlunoGrupo->first()->id;
@@ -156,44 +150,84 @@ class MonografiaController extends Controller
                             </script>"; 
 
                 }
+                if ($dataAtual >= $dadosParam->dataAberturaUploadTCC    && 
+                    $dataAtual <= $dadosParam->dataFechamentoUploadTCC  &&
+                    $dadosMonografia->first()->status == "AGUARDANDO ARQUIVO TCC") {
+                    $uploadTcc = 1;
+                }
+    
                 $dadosAlunoGrupo = Aluno::where('monografia_id',$dadosMonografia->first()->id)->whereNotIn('id',[auth()->user()->codpes])->get();
                 $numUSPAluno = auth()->user()->codpes;
                 $nomeAluno = auth()->user()->name;
 
                 if (MonoOrientadores::where('monografia_id',$monografia_id)->where('status','APROVADO')->count() > 0) {
                     if ($dadosMonografia->first()->status <> "AGUARDANDO CORRECAO DO PROJETO") {
-                        $readonly = true;
-                        $edicao = true;
+                        $readonly = 0;
+                        $edicao = 1;
                     } else {
-                        $uploadTcc = false;
-                        $edicao = false;
+                        $uploadTcc = 0;
                     }
                 }
 
-            } elseif (auth()->user()->hasRole('orientador') && !auth()->user()->can('admin')) {
+            } 
+            if (auth()->user()->hasRole('orientador') && !auth()->user()->can('admin') && strpos($_GET['route'],'orientador') !== false) {
+                $userLogado.= "Orientador";
                 $ddOrientador = Orientador::where('email',auth()->user()->email)->get();
-                $monoOrientador = MonoOrientadores::where('orientadores_id',$ddOrientador->first()->id)->where('monografia_id',$dadosMonografia->first()->id)->get();
+                $monoOrientador = MonoOrientadores::where('orientadores_id',$ddOrientador->first()->id)
+                                                ->where('monografia_id',$dadosMonografia->first()->id)
+                                                ->get();
                 
-                if ($monoOrientador->isEmpty()) {
-                    return "<script> alert('M5-Monografia não está sob sua orientação. Entre em contato com a Graduação'); 
-                                     window.location.assign('".route('home')."');
-                            </script>"; 
-
-                } elseif ($monoOrientador->first()->status == "APROVADO") {
-                    $aprovOrientador = false;
-                    $readonly = true;
-                    $edicao = false;
-                }
+                if (!$monoOrientador->isEmpty() ) {                    
+                    if ($monoOrientador->first()->status == "APROVADO") {
+                        $aprovOrientador = 0;
+                        if (($dadosMonografia->first()->status == "AGUARDANDO DEFESA" &&
+                            Defesa::where('monografia_id',$dadosMonografia->first()->id)->where('dataEscolhida','>=',date_create('now'))->count() > 0) ||
+                            ($dadosMonografia->first()->status == "AGUARDANDO NOTA DO PROJETO" || $dadosMonografia->first()->status == "AGUARDANDO NOTA DO TCC")
+                        )
+                            $inserirNota = 1;
+                    } else {
+                        if ($dataAtual >= $dadosParam->dataAberturaDocente && 
+                            $dataAtual <= $dadosParam->dataFechamentoDocente ) {
+                        
+                            $aprovOrientador = 1;
+                            $readonly = 0;
+                            $edicao = 1;
+                        }
+                    }
+                } 
+                
                 $numUSPAluno = $dadosAlunoGrupo->first()->id;
                 $nomeAluno = $dadosAlunoGrupo->first()->nome;
 
                 $dadosAlunoGrupo = Aluno::where('monografia_id',$dadosMonografia[0]->id)->whereNotIn('id',[$dadosAlunoGrupo->first()->id])->get();
-            } elseif (auth()->user()->hasRole('graduacao') || auth()->user()->can('admin')) {
-                if ($dadosMonografia->first()->status == "AGUARDANDO AVALIACAO" &&
-                    Avaliacao::where('monografia_id',$dadosMonografia->first()->id)->count() == 0) {
-                    $indicarParecerista = true;
-                    $edicao = false;
-                    $dadosParecerista = Comissao::all();
+            } 
+            if ( auth()->user()->can('userComissao')) {
+                if ($dadosMonografia->first()->status == "AGUARDANDO AVALIACAO") {
+                    if (Avaliacao::where('monografia_id',$dadosMonografia->first()->id)->count() == 0) {
+                        $indicarParecerista = 1;
+                        $dadosParecerista = Comissao::where('dtInicioMandato','<=', date_create('now')->format('Y-m-d'))
+                                                    ->where('dtFimMandato', '>=', date_create('now')->format('Y-m-d'))
+                                                    ->get();
+                    }
+                } 
+            } 
+            if (auth()->user()->can('userAvaliador')) {
+                $userLogado.= "Avaliador";
+                $ddAvaliador = Comissao::where('codpes',auth()->user()->codpes)->get();
+                
+                if ($dataAtual >= $dadosParam->dataAberturaAvaliacao && 
+                    $dataAtual <= $dadosParam->dataFechamentoAvaliacao &&
+                    Avaliacao::where('monografia_id',$dadosMonografia[0]->id)
+                            ->where('comissoes_id',$ddAvaliador->first()->id)->count() > 0) {
+                 
+                    $avaliar = 1;
+                }
+                
+            } 
+            if (auth()->user()->hasRole('graduacao') || auth()->user()->can('admin')) {
+                if (($dadosMonografia->first()->ano == $anoAtual && $dadosMonografia->first()->semestre <> $semestreAtual) ||
+                        ($dadosMonografia->first()->ano < $anoAtual)) {
+                        $modificaParametro = 1;
                 }
             }
         } elseif (auth()->user()->hasRole('aluno')) {
@@ -215,18 +249,23 @@ class MonografiaController extends Controller
             
             if ($mono_id > 0) {
                 
+                $dadosParam = Parametro::getDadosParam($mono_id);
+                
                 if (empty($ano)) {
                     $dadosMonografia = Monografia::with(['alunos', 'orientadores','unitermos'])->orderBy('ano')->where('id',$mono_id)->get();
                 } else {
                     $dadosMonografia = Monografia::with(['alunos', 'orientadores','unitermos'])->orderBy('ano')->where('id',$mono_id)->where('ano',$ano)->get();
                 }
+                if ($dataAtual >= $dadosParam->dataAberturaUploadTCC    && 
+                    $dataAtual <= $dadosParam->dataFechamentoUploadTCC  &&
+                    $dadosMonografia->first()->status == "AGUARDANDO ARQUIVO TCC") {
+                    $uploadTcc = 1;
+                }
                 if (MonoOrientadores::where('monografia_id',$mono_id)->where('status','APROVADO')->count() > 0) {
-                    if ($dadosMonografia->first()->status <> "AGUARDANDO CORRECAO DO PROJETO") {
-                        $readonly = true;
-                        $edicao = true;
-                    } else {
-                        $uploadTcc = false;
-                        $edicao = false;
+                    if ($dadosMonografia->first()->status == "AGUARDANDO CORRECAO DO PROJETO") 
+                    {    
+                        $uploadTcc = 0;
+                        $edicao = 0;
                     }
                 }
                 $dadosUnitermos = $dadosMonografia->first()->unitermos;
@@ -235,7 +274,10 @@ class MonografiaController extends Controller
             
             } else {
                 $dadosAlunoGrupo = Aluno::where('id',[auth()->user()->codpes])->get();
-                $uploadTcc = false;
+                if (($dataAtual >= $dadosParam->dataAberturaDiscente || $dataAtual <= $dadosParam->dataFechamentoDiscente)) {
+                    $readonly = 0;
+                }
+                $uploadTcc = 0;
             }
  
             $numUSPAluno = auth()->user()->codpes;
@@ -254,6 +296,8 @@ class MonografiaController extends Controller
         $orientadorId = 0;
         $orientadorSecundario = array();
         $dadosAvaliacoes = null;
+        $dadosNotasProjeto = null;
+        $dadosNotasTcc = null;
         
         if (!is_array($dadosMonografia) && !$dadosMonografia->isEmpty()) {
             $dadosMonografia = $dadosMonografia->first();
@@ -268,6 +312,9 @@ class MonografiaController extends Controller
                     $orientadorId = $listOrient->id;
                 }
             }
+
+            $dadosNotasProjeto = Nota::where('monografia_id',$dadosMonografia->id)->where('tipo_nota','PROJETO')->get();
+            $dadosNotasTcc = Nota::where('monografia_id',$dadosMonografia->id)->where('tipo_nota','TCC')->get();
             
             $maxDtAvaliacao = Avaliacao::where("monografia_id",$dadosMonografia->id)
                                        ->get()
@@ -276,19 +323,21 @@ class MonografiaController extends Controller
             $dadosAvaliacoes = Avaliacao::where("monografia_id",$dadosMonografia->id)
                                         ->where("dataAvaliacao",$maxDtAvaliacao)
                                         ->get();
-            
+
             $dadosDefesa = Defesa::where("monografia_id",$dadosMonografia->id)->get();
             $dadosBanca = Banca::where("monografia_id",$dadosMonografia->id)->orderBy('ordem')->get();
             $dadosOrientadores = MonoOrientadores::with('orientadores')->where("monografia_id",$dadosMonografia->id)->get();
             
             if (!$dadosAvaliacoes->isEmpty()) {
-                if (auth()->user()->hasRole('avaliador')) {
-                    if ($dadosAvaliacoes->first()->status == "CORRIGIDO" || 
-                        $dadosAvaliacoes->first()->status == "AGUARDANDO") {
+                if (auth()->user()->can('userAvaliador')) {
+                    if (($dadosAvaliacoes->first()->status == "CORRIGIDO" || 
+                        $dadosAvaliacoes->first()->status == "AGUARDANDO") &&
+                        Comissao::where('id',$dadosAvaliacoes->first()->comissoes_id)
+                                ->where('codpes',auth()->user()->codpes)->count() > 0) {
                     
-                        $avaliar = true;
+                        $avaliar = 1;
                     } else {
-                        $avaliar = false;
+                        $avaliar = 0;
                     }
                     /*$maxDtAvaliacao = Avaliacao::where("monografia_id",$dadosMonografia->id)
                                                ->whereIn("status",["CORRIGIDO","AGUARDANDO"])
@@ -304,30 +353,41 @@ class MonografiaController extends Controller
                     
                     
                 } elseif (auth()->user()->hasRole("aluno") && $dadosAvaliacoes->first()->status == "DEVOLVIDO") {
-                    $readonly = false;
-                    $edicao = true;
+                    $readonly = 0;
+                    $edicao = 1;
                 }
             } else {
+                $avaliar = 0;
                 $dadosAvaliacoes = Avaliacao::where("monografia_id",$dadosMonografia->id)
                                             ->where("status","APROVADO")
                                             ->get();
             }
             
             if (!$dadosAvaliacoes->isEmpty()) {
+                $aprovadoOrientador = 1;
                 $avParecerista = Comissao::find($dadosAvaliacoes->first()->comissoes_id);
                 $dadosAvaliacoes->first()->dataAvaliacao = date_create($dadosAvaliacoes->first()->dataAvaliacao);
                 $dadosAvaliacoes->_parecerista = $avParecerista->codpes." ".$avParecerista->nome;
-                $idParecerista = $avParecerista->id; 
+                $idParecerista = $avParecerista->id;
             }
 
             if (auth()->user()->hasRole("graduacao")) {
-                $validacaoTcc = ($dadosMonografia->status == "AGUARDANDO VALIDACAO DA BANCA")?true:false;
-                $readonly = ($dadosMonografia->status == "CONCLUIDO")?true:false;
+                $validacaoTcc = ($dadosMonografia->status == "AGUARDANDO VALIDACAO DA BANCA")?1:0;
+                $readonly = ($dadosMonografia->status == "CONCLUIDO")?1:0;
+            }
+
+            if (!$dadosDefesa->isEmpty()) {
+                if (is_null($dadosDefesa->first()->aprovacao_orientador)) {
+                    $aprovaBanca = 1;
+                    $validacaoTcc = 0;
+                } elseif (!$dadosDefesa->first()->aprovacao_orientador) {
+                    $uploadTcc = 1;
+                }
             }
         } 
         
         $listaAlunosDupla = Aluno::getDadosAluno();
-        $listaOrientadores = Orientador::where('nome','like','%')->orderBy('nome')->get();
+        $listaOrientadores = Orientador::where('aprovado', 1)->orderBy('nome')->get();
         
         $parametros = ["numUSPAluno"        => $numUSPAluno
                       ,"nomeAluno"          => $nomeAluno
@@ -359,6 +419,14 @@ class MonografiaController extends Controller
                       ,"dadosDefesa"        => $dadosDefesa
                       ,"dadosBanca"         => $dadosBanca
                       ,"validacaoTcc"       => $validacaoTcc
+                      ,"aprovadoOrientador" => $aprovadoOrientador
+                      ,"dadosNotasProjeto"  => $dadosNotasProjeto
+                      ,"dadosNotasTcc"      => $dadosNotasTcc
+                      ,"inserirNota"        => $inserirNota
+                      ,"paramUtilizado"     => $paramUtilizado
+                      ,"listaParam"         => $listaParam
+                      ,"modificaParametro"  => $modificaParametro
+                      ,"aprovaBanca"        => $aprovaBanca
                       ];
         
         return view('formMonografia',$parametros);
@@ -390,13 +458,14 @@ class MonografiaController extends Controller
         }*/
 
         $rules['orientador_id']     = "required";
+        $rules['curriculo']         = "required";
         $rules['titulo']            = ["required","min:3","max:255"];
-        $rules['resumo']            = ["required","min:3","max:255"];
-        $rules['introducao']        = ["required","min:3",new CountWord500];
-        $rules['objetivo']          = ["required","min:3",new CountWord250];
-        $rules['material_metodo']   = ["required","min:3",new CountWord500];
-        $rules['resultado_esperado']= ["required","min:3",new CountWord500];
-        $rules['aspecto_etico']     = ["required","min:3",new CountWord250];
+        $rules['resumo']            = ["required","min:3",new CountWord1000];
+        $rules['introducao']        = ["required","min:3",new CountWord1000];
+        $rules['objetivo']          = ["required","min:3",new CountWord1000];
+        $rules['material_metodo']   = ["required","min:3",new CountWord1000];
+        $rules['resultado_esperado']= ["required","min:3",new CountWord1000];
+        $rules['aspecto_etico']     = ["required","min:3",new CountWord1000];
         if (!$request->filled('txtUnitermo1'))
             $rules['unitermo1']     = ["required", "exists:unitermos,id"];
         if (!$request->filled('txtUnitermo2')) 
@@ -417,7 +486,7 @@ class MonografiaController extends Controller
         //$messages['template_apres.required']  = "O arquivo da monografia deve ser informado.";
 
         $request->validate($rules,$messages);
-        
+
         /*$arquivo = $request->file('template_apres');
         $arquivo->move(public_path('upload'),$arquivo->getClientOriginalName());
 
@@ -438,6 +507,7 @@ class MonografiaController extends Controller
             $monografia->titulo            = $request->input('titulo');
             $monografia->resumo            = $request->input('resumo');
             $monografia->introducao        = $request->input('introducao');
+            $monografia->curriculo         = $request->input('curriculo');
             $monografia->objetivo          = $request->input('objetivo');
             $monografia->material_metodo   = $request->input('material_metodo');
             $monografia->resultado_esperado= $request->input('resultado_esperado');
@@ -495,10 +565,10 @@ class MonografiaController extends Controller
                 $mono_orientador = new MonoOrientadores;
                 $mono_orientador->orientadores_id = $orientador->id;
                 $mono_orientador->monografia_id = $monografia->id;
-                $mono_orientador->principal = false;
+                $mono_orientador->principal = 0;
                 
                 if ($key==0)
-                    $mono_orientador->principal = true;
+                    $mono_orientador->principal = 1;
 
                 $mono_orientador->save();
                 $mo[] = $mono_orientador;
@@ -606,7 +676,7 @@ class MonografiaController extends Controller
             ";
             $textoOrientador.= "Estando de acordo, faça o envio para a CTCC - FCF.                                                
             ";
-            $textoOrientador.= "Caso seja necessária alguma alteração, acesse o campo, altere, salve e envie para a CTCC.         
+            $textoOrientador.= "Caso seja necessária alguma alteração, acesse o campo, altere e envie para a CTCC.         
             ";
 
             /*if (count($orientadores) > 1) {
@@ -630,28 +700,31 @@ class MonografiaController extends Controller
                     $body.="**Você é o Orientador Principal.**                                                                   
                     ";
                 }*/
-                Mail::to("pcalves@usp.br", $orientador->nome)
-                    ->send(new NotificacaoOrientador($body,"[".config('app.url')." - ORIENTADOR] Novo Projeto Cadastrado",$orientador->nome));
-                /*Mail::to($orientador->email, $orientador->nome)
-                    ->send(new NotificacaoOrientador($body,"[".config('app.url')." - ORIENTADOR] Novo Projeto Cadastrado",$orientador->nome));*/
+                /*Mail::to("pcalves@usp.br", $orientador->nome)
+                    ->send(new NotificacaoOrientador($body,"ORIENTADOR - Novo Projeto Cadastrado",$orientador->nome));*/
+                Mail::to($orientador->email, $orientador->nome)
+                    ->send(new NotificacaoOrientador($body,"ORIENTADOR - Novo Projeto Cadastrado",$orientador->nome));
             }
 
+            //Envio e-mail para o aluno
             $txtMsgAluno = "Você está recebendo a confirmação de inclusão do Projeto de Conclusão de Curso, realizado
             no sistema em ".$dataAtual->format('d/m/Y H:i:s')." e enviado para o seu orientador.
             ";
 
-            $emailAluno = Pessoa::email($aluno->id);
+            $emailAluno = Pessoa::emailusp($aluno->id);
 
-            Mail::to("pcalves@usp.br", $aluno->nome)
-                    ->send(new NotificacaoAluno($txtMsgAluno,"[".config('app.url')." - ALUNO] Novo Projeto Cadastrado",$aluno->nome));
-            /*Mail::to($emailAluno, $aluno->nome)
-                    ->send(new NotificacaoAluno($txtMsgAluno,"[".config('app.url')." - ALUNO] Novo Projeto Cadastrado",$aluno->nome));*/
+            /*Mail::to("pcalves@usp.br", $aluno->nome)
+                    ->send(new NotificacaoAluno($txtMsgAluno,$aluno->nome,"Confirmação de inclusão de Projeto de Conclusão de Curso"));*/
+            Mail::to($emailAluno, $aluno->nome)
+                ->send(new NotificacaoAluno($txtMsgAluno,$aluno->nome,"Confirmação de inclusão de Projeto de Conclusão de Curso"));
 
             $mensagem = "Monografia cadastrada";
 
         } catch (Exception $e) {
             $mensagem = "Erro no cadastro da Monografia. ".$e->message();
         }
+
+        print "<script>alert('$mensagem'); </script>";
 
         return redirect()->route('alunos.index', 
                                 ['monografiaId' => $monografia->id
@@ -695,6 +768,11 @@ class MonografiaController extends Controller
     public function update(Request $request, $id)
     {
         $objMonografia = Monografia::find($id);
+
+        if ($objMonografia->status == "CONCLUIDO") {
+            return Redirect::back()->withErrors(['curriculo'=>'Monografia concluída não pode ser editada.']);
+        }
+
         $mensagem = null;
         $rules = [];
         /*if ($request->input('dupla')) {
@@ -705,13 +783,14 @@ class MonografiaController extends Controller
         $dataAtual = date_create('now');
 
         $rules['orientador_id']     = "required";
+        $rules['curriculo']         = "required";
         $rules['titulo']            = ["required","min:3","max:255"];
-        $rules['resumo']            = ["required","min:3","max:255"];
-        $rules['introducao']        = ["required","min:3",new CountWord500];
-        $rules['objetivo']          = ["required","min:3",new CountWord250];
-        $rules['material_metodo']   = ["required","min:3",new CountWord500];
-        $rules['resultado_esperado']= ["required","min:3",new CountWord500];
-        $rules['aspecto_etico']     = ["required","min:3",new CountWord250];
+        $rules['resumo']            = ["required","min:3",new CountWord1000];
+        $rules['introducao']        = ["required","min:3",new CountWord1000];
+        $rules['objetivo']          = ["required","min:3",new CountWord1000];
+        $rules['material_metodo']   = ["required","min:3",new CountWord1000];
+        $rules['resultado_esperado']= ["required","min:3",new CountWord1000];
+        $rules['aspecto_etico']     = ["required","min:3",new CountWord1000];
         if (!$request->filled('txtUnitermo1'))
             $rules['unitermo1']     = ["required", "exists:unitermos,id"];
         if (!$request->filled('txtUnitermo2')) 
@@ -759,8 +838,16 @@ class MonografiaController extends Controller
         }
         
         try {
-            $objMonografia->titulo = $request->input('titulo');
-            $objMonografia->resumo = $request->input('resumo');
+            $objMonografia->curriculo         = $request->input('curriculo');
+            $objMonografia->titulo            = $request->input('titulo');
+            $objMonografia->resumo            = $request->input('resumo');
+            $objMonografia->introducao        = $request->input('introducao');
+            $objMonografia->objetivo          = $request->input('objetivo');
+            $objMonografia->material_metodo   = $request->input('material_metodo');
+            $objMonografia->resultado_esperado= $request->input('resultado_esperado');
+            $objMonografia->aspecto_etico     = $request->input('aspecto_etico');
+            $objMonografia->referencias       = $request->input('referencias');
+
             $objMonografia->areastematicas_id = $request->input('cod_area_tematica');
             if (!empty($nomeArq)) {
                 if (!empty($objMonografia->path_arq_tcc) && $nomeArq != $objMonografia->path_arq_tcc) {
@@ -898,12 +985,12 @@ class MonografiaController extends Controller
             }
 
             $dadosAvaliacao = Avaliacao::where('status','DEVOLVIDO')->where('id',$request->input('av_id'))->get();
-            $envioEmailOrientador = false;
+            $envioEmailOrientador = 0;
             if (isset($dadosAvaliacao->first()->status) && auth()->user()->hasRole('aluno')) {
                 $dadosAvaliacao = $dadosAvaliacao->first();
                 $dadosAvaliacao->status = "CORRIGIDO";
                 $dadosAvaliacao->update();
-                $envioEmailOrientador = true;
+                $envioEmailOrientador = 1;
 
                 $objMonografia->status = "AGUARDANDO AVALIACAO";
                 $objMonografia->update();
@@ -927,25 +1014,27 @@ class MonografiaController extends Controller
 
                 $comissao = Comissao::find($dadosAvaliacao->comissoes_id);
 
-                Mail::to("pcalves@usp.br", $comissao->nome)
-                    ->send(new NotificacaoOrientador($textoMensagem, $assuntoMsg, $comissao->nome));
-                /*Mail::to($objOrientador->email, $orientadores->nome)
-                      ->send(new NotificacaoOrientador($textoMensagem, $assuntoMsg, $orientadores->nome));*/
- 
+                /*Mail::to("pcalves@usp.br", $comissao->nome)
+                    ->send(new NotificacaoOrientador($textoMensagem, $assuntoMsg, $comissao->nome));*/
+                Mail::to($comissao->email, $comissao->nome)
+                      ->send(new NotificacaoOrientador($textoMensagem, $assuntoMsg, $comissao->nome));
 
-                /*foreach($objMonografia->orientadores()->get() as $orientadores) {
-                    if ($orientadores->pivot->principal) {
-                        $txt.= "**Você é o Orientador Principal**.                               
-                        ";
-                    } else {
-                        $txt = null;
-                    }
-                    $textoMensagem.= $txt;
-                    Mail::to("pcalves@usp.br", $orientadores->nome)
-                        ->send(new NotificacaoOrientador($textoMensagem, $assuntoMsg, $orientadores->nome));
-                    /*Mail::to($objOrientador->email, $orientadores->nome)
+                foreach($objMonografia->orientadores()->get() as $orientadores) {
+                    $textoMensagem = "O projeto de TCC título **".$objMonografia->titulo."** foi corrigida pelo aluno.           
+                    ";
+                    $textoMensagem.= "Aluno que cadastrou a correção: **".auth()->user()->name. "**                                        
+                    ";
+                    $textoMensagem.= "Correção que foi solicitada pela comissão: *".$dadosAvaliacao->parecer."*                                                                                            
+                    ";
+                    $textoMensagem.= "Não é necessária nenhuma ação no sistema, somente para ciência.                               
+                    ";
+                    $assuntoMsg = "TCC com título ".$objMonografia->titulo." corrigida pelo aluno.";
+                    
+                    /*Mail::to("pcalves@usp.br", $orientadores->nome)
                         ->send(new NotificacaoOrientador($textoMensagem, $assuntoMsg, $orientadores->nome));*/
-                //}*/
+                    Mail::to($objOrientador->email, $orientadores->nome)
+                        ->send(new NotificacaoOrientador($textoMensagem, $assuntoMsg, $orientadores->nome));
+                }
                 
             } else {
                 $mensagem = "Monografia corrigida";
@@ -1013,96 +1102,101 @@ class MonografiaController extends Controller
                                 window.location.assign('".route('home')."');
                     </script>";
         }
-        $dadosParam = Parametro::getDadosParam();
-        $sistema_aberto = null;
-        $dataAtual = date_create('now');
-        if (!isset($dadosParam->dataAberturaDocente)) {
-            if (!auth()->user()->can('admin') && !auth()->user()->hasRole('graduacao')) {
-                return "<script> alert('M30-O Sistema não foi aberto para edições. Aguarde comunicado da Graduação.'); 
-                                window.location.assign('".route('home')."');
-                        </script>";
-            }
-        } elseif (auth()->user()->hasRole('orientador')) {
-    
-            if ($dataAtual <= $dadosParam->dataAberturaDocente ) {
-                $sistema_aberto = "Aguarde abertura do Sistema em ".$dadosParam->dataAberturaDocente->format('d/m/Y'); 
-            }
-
-            if ($dataAtual > $dadosParam->dataFechamentoDocente ) {
-                $sistema_aberto = "Sistema fechado em ".$dadosParam->dataFechamentoDocente->format('d/m/Y'); 
-            } 
-        } elseif (auth()->user()->hasRole('avaliador')) {
-            if ($dataAtual <= $dadosParam->dataAberturaAvaliacao ) {
-                $sistema_aberto = "Aguarde abertura do Sistema em ".$dadosParam->dataAberturaDocente->format('d/m/Y'); 
-            }
-
-            if ($dataAtual > $dadosParam->dataFechamentoAvaliacao ) {
-                $sistema_aberto = "Sistema fechado em ".$dadosParam->dataFechamentoDocente->format('d/m/Y'); 
-            } 
-        }
+        
         $userLogado = null;
-        $userLogado = (auth()->user()->hasRole('orientador'))?"Orientador":$userLogado;
-        $userLogado = (auth()->user()->hasRole('graduacao'))?"Graduacao":$userLogado;
-        $userLogado = (auth()->user()->hasRole('avaliador'))?"Avaliador":$userLogado;
-        $userLogado = (auth()->user()->can('admin'))?"Admin":$userLogado;
+        $userLogado.= (auth()->user()->hasRole('orientador'))?"Orientador,":$userLogado;
+        $userLogado.= (auth()->user()->hasRole('graduacao'))?"Graduacao,":$userLogado;
+        $userLogado.= (auth()->user()->hasRole('avaliador'))?"Avaliador,":$userLogado;
+        $userLogado.= (auth()->user()->can('userComissao'))?"Comissao,":$userLogado;
+        $userLogado.= (auth()->user()->can('admin'))?"Admin":$userLogado;
         
         $dadosMonografias = array();
         $grupoAlunos = array();
         $dadosOrientadores = array();
+        $ObjMonografias = new Monografia;
+        $indicarParecerista = 0;
 
-        if ($id_orientador > 0 || $userLogado == "Orientador" ) {
-            
-            if ($id_orientador == 0) {
-                $Orientador = Orientador::where('email', auth()->user()->email)->get();
-                if ($Orientador->isEmpty()) {
-                    return "<script> alert('M40-Você não tem permissão para acessar essa área do sistema.'); 
-                                window.location.assign('".route('home')."');
-                        </script>";
-                }
-                $id_orientador = $Orientador->first()->id;
-            } 
+        if ($id_orientador == 0 && auth()->user()->hasRole('orientador') && !auth()->user()->hasRole('graduacao') && !auth()->user()->can('admin')) {
+            $Orientador = Orientador::where('email', auth()->user()->email)->get();
+            if ($Orientador->isEmpty()) {
+                return "<script> alert('M40-Você não tem permissão para acessar essa área do sistema.'); 
+                            window.location.assign('".route('home')."');
+                    </script>";
+            }
+            $id_orientador = $Orientador->first()->id;
+        } 
+
+        if ($id_orientador > 0 && auth()->user()->hasRole('orientador') && (strpos($_GET['route'],'orientador') !== false || strpos($_GET['route'],'buscaMonografia') !== false)) {
             if (empty($filtro)) {
                 if (empty($status)) {
                     $Monografias = Monografia::with(['alunos','orientadores'])
                                             ->whereRelation('orientadores', 'orientadores_id', $id_orientador)
                                             ->where('status','<>','CONCLUÍDO')
                                             ->orderBy('ano','desc')
+                                            ->orderBy('semestre')
                                             ->paginate(30);
                 } else {
                     $Monografias = Monografia::with(['alunos','orientadores'])
                                             ->whereRelation('orientadores', 'orientadores_id', $id_orientador)
                                             ->where('status',$status)
                                             ->orderBy('ano','desc')
+                                            ->orderBy('semestre')
                                             ->paginate(30);
                 }
             } else {
                 if (empty($status)) {
-                    $Monografias = Monografia::with(['alunos','orientadores'])
-                                             ->where('status','<>','CONCLUÍDO')
-                                             ->whereRelation('orientadores', 'orientadores_id', $id_orientador)
+                    $Monografias = $ObjMonografias->getMonografiaByFiltro($filtro,0,$id_orientador); 
+
+                    /*$Monografias = Monografia::with(['alunos','orientadores'])
+                                             
+                                             ->whereOr('alunos',function (Builder $query) {
+                                                $query->where('nome','like',"%$filtro%");
+                                             })
                                              ->whereRelation('alunos','nome','like',"%$filtro%")
                                              ->whereOr('titulo','like',"%$filtro%")
                                              ->whereOr('ano','like',"%$filtro%")
+                                             ->whereOr('status','<>','CONCLUÍDO')
+                                             //->whereRelation('orientadores', 'orientadores_id', $id_orientador)
                                              ->orderBy('ano','desc')
-                                             ->get();
+                                             ->orderBy('semestre')
+                                             ->get();*/
                 } else {
-                    $Monografias = Monografia::with(['alunos','orientadores'])
+                    $Monografias = $ObjMonografias->getMonografiaByFiltro($filtro,0,$id_orientador,$status);
+                    /*$Monografias = Monografia::with(['alunos','orientadores'])
+                                             ->where('status',$status)
+                                             ->whereOr('alunos',function (Builder $query) {
+                                                $query->where('nome','like',"%$filtro%");
+                                             })
+                                             //->whereRelation('alunos','nome','like',"%$filtro%")
+                                             ->whereOr('titulo','like',"%$filtro%")
+                                             ->whereOr('ano','like',"%$filtro%")
+                                             //->whereRelation('orientadores', 'orientadores_id', $id_orientador)
+                                             ->orderBy('ano','desc')
+                                             ->orderBy('semestre')
+                                             ->get();
+                    /*$Monografias = Monografia::with(['alunos','orientadores'])
                                              ->where('status',$status)
                                              ->whereRelation('orientadores', 'orientadores_id', $id_orientador)
                                              ->whereRelation('alunos','nome','like',"%$filtro%")
                                              ->whereOr('titulo','like',"%$filtro%")
                                              ->whereOr('ano','like',"%$filtro%")
                                              ->orderBy('ano','desc')
-                                             ->get();
+                                             ->orderBy('semestre')
+                                             ->get();*/
                 }
                 
             }
-        } elseif ($userLogado == "Avaliador") {
-            $comissao = Comissao::where('codpes',auth()->user()->codpes)->get();
+        }
+        
+        if (auth()->user()->hasRole('avaliador') && strpos($_GET['route'],'graduacao') !== false) {
+            $comissao = Comissao::where('codpes',auth()->user()->codpes)
+                                ->where('dtInicioMandato','<=', date_create('now')->format('Y-m-d'))
+                                ->where('dtFimMandato', '>=', date_create('now')->format('Y-m-d'))
+                                ->get();
             if ($comissao->isEmpty()) {
                 return "<script> alert('M41-Você não tem permissão para acessar essa área do sistema.'); 
                             window.location.assign('".route('home')."');
-                    </script>";
+                        </script>";
             }
             $id_orientador = $comissao->first()->id;
 
@@ -1160,7 +1254,26 @@ class MonografiaController extends Controller
                                              ->get();
                 }
             }
-        } else {
+        } 
+        if (auth()->user()->can('userComissao') && strpos($_GET['route'],'comissao') !== false) {
+            $indicarParecerista = 1;
+            if (empty($filtro)) {
+                if (empty($status)) {
+                    $Monografias = Monografia::with(['alunos','orientadores'])
+                                             ->where('status', 'AGUARDANDO AVALIACAO')
+                                             ->doesntHave('avaliacoes')
+                                             ->orderBy('ano','desc')->paginate(30);
+                } else {
+                    $Monografias = Monografia::with(['alunos','orientadores'])
+                                             ->where('status',$status)
+                                             ->doesntHave('avaliacoes')
+                                             ->orderBy('ano','desc')->paginate(30);
+                }
+            } else {
+                $Monografias = $ObjMonografias->getMonografiaByFiltro($filtro,0,0,$status,1);
+            }
+        }
+        if (auth()->user()->hasRole('graduacao') || auth()->user()->can('admin')) {
             if (empty($filtro)) {
                 if (empty($status)) {
                     $Monografias = Monografia::with(['alunos','orientadores'])
@@ -1172,25 +1285,48 @@ class MonografiaController extends Controller
                                              ->orderBy('ano','desc')->paginate(30);
                 }
             } else {
-                $ObjMonografias = new Monografia;
                 $Monografias = $ObjMonografias->getMonografiaByFiltro($filtro,0,0,$status);
-
-                /*$Monografias = Monografia::with(['alunos','orientadores'])
-                                         #->whereRelation('alunos','nome','like',"%$filtro%")
-                                         ->whereOr('titulo','like',"%$filtro%")
-                                         ->whereOr('ano','like',"%$filtro%")
-                                         ->orderBy('ano','desc')
-                                         ->paginate(30);*/
             }
            
         }
         $dadosMonografias = $Monografias;
-
+        $dataAtual = date_create('now');
+        $sistema_aberto = array();
+        
         foreach ($dadosMonografias as $dadosM) {
-           $collectionM = Monografia::with(['alunos','orientadores'])->where('id', $dadosM->id)->get();
-           $grupoAlunos[$dadosM->id] = $collectionM->first()->alunos()->get();
-           $dadosOrientadores[$dadosM->id] = $collectionM->first()->orientadores()->get();
-           $idMono = $dadosM->id;
+            $collectionM = Monografia::with(['alunos','orientadores'])->where('id', $dadosM->id)->get();
+            $grupoAlunos[$dadosM->id] = $collectionM->first()->alunos()->get();
+            $dadosOrientadores[$dadosM->id] = $collectionM->first()->orientadores()->get();
+            $idMono = $dadosM->id;
+
+            $dadosParam = Parametro::getDadosParam($dadosM->id);
+            
+            if (!isset($dadosParam->dataAberturaDocente)) {
+                if (!auth()->user()->can('admin') && !auth()->user()->hasRole('graduacao')) {
+                    return "<script> alert('M30-O Sistema não foi aberto para edições. Aguarde comunicado da Graduação.'); 
+                                    window.location.assign('".route('home')."');
+                            </script>";
+                }
+            } 
+            if (auth()->user()->hasRole('orientador') && strpos($_GET['route'],'orientador') !== false) {
+        
+                if ($dataAtual <= $dadosParam->dataAberturaDocente ) {
+                    $sistema_aberto[$dadosM->id] = "Aguarde abertura do Sistema em ".$dadosParam->dataAberturaDocente->format('d/m/Y'); 
+                }
+
+                if ($dataAtual > $dadosParam->dataFechamentoDocente ) {
+                    $sistema_aberto[$dadosM->id] = "Sistema fechado em ".$dadosParam->dataFechamentoDocente->format('d/m/Y'); 
+                } 
+            } 
+            if (auth()->user()->hasRole('avaliador') && strpos($_GET['route'],'graduacao') !== false) {
+                if ($dataAtual <= $dadosParam->dataAberturaAvaliacao ) {
+                    $sistema_aberto[$dadosM->id] = "Aguarde abertura do Sistema em ".$dadosParam->dataAberturaDocente->format('d/m/Y'); 
+                }
+
+                if ($dataAtual > $dadosParam->dataFechamentoAvaliacao ) {
+                    $sistema_aberto[$dadosM->id] = "Sistema fechado em ".$dadosParam->dataFechamentoDocente->format('d/m/Y'); 
+                } 
+            }
         }
         
         $parametros = ["dadosMonografias" => $dadosMonografias
@@ -1201,6 +1337,7 @@ class MonografiaController extends Controller
                       ,"id_orientador"    => $id_orientador
                       ,"filtro"           => $filtro
                       ,"status"           => $status
+                      ,"indicarParecerista"=> $indicarParecerista
                       ];
         
         return view('listMonografia',$parametros);
@@ -1254,13 +1391,13 @@ class MonografiaController extends Controller
 
             $txtEmailComissao = "O projeto ".$monografia->titulo.", cadastrado pelo aluno ".$aluno->first()->nome." foi incluído no sistema de TCC. 
             ";
-            $txtEmailComissao = "Encaminhe para avaliação, indicando um parecerista no Sistema                                                      
+            $txtEmailComissao.= "Encaminhe para avaliação, indicando um parecerista no Sistema                                                      
             ";
 
-            Mail::to("pcalves@usp.br","Comissão de TCC")
-                    ->send(new NotificacaoAluno($txtEmailComissao,"Comissão de TCC"));
-            /*Mail::to("ctcc.fcf@usp.br", "Comissão de TCC")
+            /*Mail::to("pcalves@usp.br","Comissão de TCC")
                     ->send(new NotificacaoAluno($txtEmailComissao,"Comissão de TCC"));*/
+            Mail::to("ctcc.fcf@usp.br", "Comissão de TCC")
+                    ->send(new NotificacaoAluno($txtEmailComissao,"Comissão de TCC"));
         }
 
         return redirect()->route('orientador.edicao',['idMono'=>$monografia->id]);
@@ -1296,7 +1433,7 @@ class MonografiaController extends Controller
             $orientador = Orientador::whereRelation("monografias","monografia_id",$monografia->id)->get();
             $comissao = Comissao::find($request->input('parecerista'));
 
-            $assunto = "[".config('app.name')."] Você acaba de receber um TCC para avaliação.";
+            $assunto = "Você acaba de receber um TCC para avaliação.";
 
             $txtMsg = "Você está recebendo o projeto abaixo para avaliação:               
             ";
@@ -1309,10 +1446,10 @@ class MonografiaController extends Controller
             $txtMsg.= "**Você tem o prazo de 3 dias úteis.**                          
             ";
 
-            Mail::to("pcalves@usp.br", $comissao->nome)
-                ->send(new NotificacaoOrientador($txtMsg, $assunto, $comissao->nome));
-            /*Mail::to($comissao->email, $comissao->nome)
-                    ->send(new NotificacaoOrientador($txtMsg, $assunto, $comissao->nome));*/
+            /*Mail::to("pcalves@usp.br", $comissao->nome)
+                ->send(new NotificacaoOrientador($txtMsg, $assunto, $comissao->nome));*/
+            Mail::to($comissao->email, $comissao->nome)
+                    ->send(new NotificacaoOrientador($txtMsg, $assunto, $comissao->nome));
         } else {
             $msg = "O Projeto ainda não foi aprovado pelo Orientador.";
         }
@@ -1380,11 +1517,17 @@ class MonografiaController extends Controller
             $arquivoTcc = public_path()."/upload/".$monografia->path_arq_tcc;
 
             foreach ($banca as $membro) {
-                Mail::to("pcalves@usp.br", $membro->nome)
-                    ->send(new NotificacaoOrientador($textoMensagem, $assunto, $membro->nome, $arquivoTcc));
-                /*Mail::to($membro->email, $membro->nome)
-                      ->send(new NotificacaoOrientador($textoMensagem, $assunto, $membro->nome, $arquivoTcc));*/
+                /*Mail::to("pcalves@usp.br", $membro->nome)
+                    ->send(new NotificacaoOrientador($textoMensagem, $assunto, $membro->nome, $arquivoTcc));*/
+                Mail::to($membro->email, $membro->nome)
+                      ->send(new NotificacaoOrientador($textoMensagem, $assunto, $membro->nome, $arquivoTcc));
             }  
+
+            $emailAluno = Pessoa::emailusp($aluno->first()->id);
+            /*Mail::to("pcalves@usp.br", $aluno->first()->nome)
+                    ->send(new NotificacaoOrientador($textoMensagem, $assunto, $aluno->first()->nome,"Defesa Agendadada"));*/
+            Mail::to($emailAluno, $aluno->first()->nome)
+                  ->send(new NotificacaoOrientador($textoMensagem, $assunto, $aluno->first()->nome,"Defesa Agendada"));
     
             print "<script> alert('Defesa validadada com Sucesso'); </script>";
         } else {
@@ -1392,6 +1535,73 @@ class MonografiaController extends Controller
         }
         
         return redirect(route('orientador.edicao',['idMono'=>$request->input('monografiaId')]));
+    }
+
+    /**
+     * Altera data da Defesa
+     * @param  \Illuminate\Http\Request  $request
+     * @param  int  $id
+     * @return \Illuminate\Http\Response
+     */
+    public function alteraDataDefesa(Request $request) {
+
+        $rule['txtData'] = ['required', new VerificaDatas()];
+        $rule['txtHora'] = ['required'];
+
+        $messages['required'] = "Favor informar o campo :attribute.";
+
+        $request->validate($rule,$messages);
+
+        $dataEscolhida = $request->input('txtData')." ".$request->input('txtHora');
+
+        $textoMensagem    = null;
+        $assunto          = null;
+        $dataEscolhida    = explode("/",$dataEscolhida);
+        $hora             = explode(" ",$dataEscolhida[2]);
+        $dataEscolhida[2] = $hora[0];
+        $hora             = $hora[1];
+        $dtEscolhida      = date_create($dataEscolhida[2]."/".$dataEscolhida[1]."/".$dataEscolhida[0]." ".$hora);
+        
+        $defesa = Defesa::find($request->input('idDefesa'));
+        $defesa->dataEscolhida = $dtEscolhida;
+        $defesa->user_data = auth()->user()->codpes;
+       
+        if ($defesa->update()) {
+            $monografia = Monografia::find($defesa->monografia_id);
+
+            $aluno = Aluno::where('monografia_id',$defesa->monografia_id)->get();
+    
+            $assunto = "A data da Defesa foi modificada, Projeto: ".$monografia->titulo;
+    
+            $textoMensagem = "A data da apresentação do TCC para a Banca foi modificada.             
+            ";
+            $textoMensagem.= "**Aluno:** ".$aluno->first()->nome."                                 
+            ";
+            $textoMensagem.= "**Título do Trabalho:** ".$monografia->titulo."                            
+            ";
+            $textoMensagem.= "**Data e horário:** ".$dtEscolhida->format('d/m/Y H:i')."                  
+            ";
+            $textoMensagem.= "Consulte o link abaixo que contém a data e o horário, bem como as normas da defesa virtual:           
+            ";
+            $textoMensagem.= "http://www.fcf.usp.br/graduacao/subpagina.php?menu=51&subpagina=351             
+            ";
+
+            $banca = Banca::where('monografia_id',$monografia->id)->get();
+            $arquivoTcc = public_path()."/upload/".$monografia->path_arq_tcc;
+
+            foreach ($banca as $membro) {
+                /*Mail::to("pcalves@usp.br", $membro->nome)
+                    ->send(new NotificacaoOrientador($textoMensagem, $assunto, $membro->nome, $arquivoTcc));*/
+                Mail::to($membro->email, $membro->nome)
+                      ->send(new NotificacaoOrientador($textoMensagem, $assunto, $membro->nome, $arquivoTcc));
+            }  
+    
+            print "<script> alert('Defesa validadada com Sucesso'); </script>";
+        } else {
+            print "<script> alert('Erro na validação da Banca'); </script>";
+        }
+        
+        return redirect(route('orientador.edicao',['idMono'=>$defesa->monografia_id]));
     }
 
 }

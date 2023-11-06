@@ -53,19 +53,42 @@ class BancaController extends Controller
      */
     public function buscaRegistroBanca(Request $request) {
 
+        $ano = $request->input('filtro');
+        $semestre = $request->input('filtro');
+        if (strpos($request->input('filtro'),"-")) {
+            $arr = explode("-",$request->input('filtro'));
+            $semestre = $arr[0];
+            $ano = $arr[1];
+        }
+        
         $listBanca = Banca::where('nome','like','%'.$request->input('filtro').'%')
-                          ->whereOr('codpes',$request->input('filtro'))
-                          ->whereOr('email','like','%'.$request->input('filtro').'%')
-                          ->whereOr('ano',$request->input('filtro'))
+                          ->orWhere('ano', 'like', "%$ano%")
+                          ->orWhere('codpes','like','%'.$request->input('filtro').'%')
+                          ->orWhere('email','like','%'.$request->input('filtro').'%')
+                          ->orWhere(function ($query) use ($semestre) {
+                                        $query->whereExists(function ($q) use ($semestre) {
+                                                    $q->select('id')
+                                                        ->from('monografias')
+                                                        ->whereColumn('bancas.monografia_id','monografias.id')
+                                                        ->where('semestre', $semestre); 
+                                                });
+                                    })   
                           ->orderBy('ano','desc')
-                          ->orderBy('nome')
-                          ->paginate(30);
+                          ->orderBy('nome')->get();
 
         if ($listBanca->isEmpty()) {
             $listBanca[] = new Banca;
+            $monografia[] = new Monografia;
+        } else {
+            foreach($listBanca as $banca) {
+                $monografia[$banca->id] = Monografia::find($banca->monografia_id);
+            }
         }
 
-        return view('cadastro-banca', ['listBanca'=>$listBanca, 'buscaRegistro' => 1, 'filtro' => $request->input('filtro')]);
+        return view('cadastro-banca', ['listBanca'=>$listBanca
+                                      ,'monografia' => $monografia
+                                      ,'buscaRegistro' => 1
+                                      ,'filtro' => $request->input('filtro')]);
     }
 
     /**

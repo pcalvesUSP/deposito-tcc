@@ -17,6 +17,9 @@ class ConfigInicial extends Controller
     {
         
         try{
+
+            return Permission::create(['name' => 'userAdmin']);
+
             $role = array();
             $role[] = Role::create(['name' => 'aluno']);
             $role[] = Role::create(['name' => 'orientador']);

@@ -21,8 +21,6 @@ class CreateMonoOrientadoresTable extends Migration
             $table->enum('status',['AGUARDANDO APROVACAO ORIENTADOR'
                                   ,'APROVADO'
                                   ,'REPROVADO']);
-            $table->float('nota',2);
-            $table->integer('frequencia');
             $table->timestamps();
             
             $table->foreign('orientadores_id')->references('id')->on('orientadores');

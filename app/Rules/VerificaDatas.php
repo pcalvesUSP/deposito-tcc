@@ -27,7 +27,7 @@ class VerificaDatas implements Rule
     {
         $arrData = explode("/",$value);
         $objDate = date_create($arrData[2]."/".$arrData[1]."/".$arrData[0]);
-        $dataAtual = date_create('now');
+        $dataAtual = date_create(date_create('now')->format('Y/m/d')." 00:00:00");
 
         return ( checkdate($arrData[1], $arrData[0], $arrData[2]) && $objDate >= $dataAtual );
     }

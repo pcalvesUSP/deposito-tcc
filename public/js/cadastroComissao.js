@@ -1,4 +1,7 @@
 $( document ).ready(function(){
+
+	$("#dtInicioMandato").mask("99/99/9999");
+	$("#dtFimMandato").mask("99/99/9999");
     
 	$("#nuspComissao").blur(function() {	    
 	    if ($(this).val().length > 0) {

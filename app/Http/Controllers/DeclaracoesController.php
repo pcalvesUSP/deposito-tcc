@@ -33,11 +33,7 @@ class DeclaracoesController extends Controller
             }
         }
 
-        $parametroSistema = Parametro::where('ano',date('Y'))->whereNull('codpes')->get();
-        if ($parametroSistema->isEmpty()) {
-            return redirect()->route('declaracao',["msg"=>"Sistema ainda não parametrizado."]);
-        }
-        $this->parametroSistema = $parametroSistema;
+        $parametroSistema = Parametro::getDadosParam();
     }
 
     /**
@@ -148,7 +144,10 @@ class DeclaracoesController extends Controller
      * @return Array
     */
     private function buscaCoordenador() {
-        $Comissao = Comissao::where('papel','COORDENADOR')->whereNotNull('assinatura')->get();
+        $Comissao = Comissao::where('papel','COORDENADOR')
+                            ->where('dtInicioMandato','<=', date_create('now')->format('Y-m-d'))
+                            ->where('dtFimMandato', '>=', date_create('now')->format('Y-m-d'))
+                            ->whereNotNull('assinatura')->get();
         if ($Comissao->isEmpty()) {
             $parametros["msgErro"] = "O Coordenador do curso precisa estar cadastrado e com a assinatura incluída. Feche essa guia.";
         } else {

@@ -42,8 +42,15 @@ $(document).ready(function(){
 
     });*/
 
+    var unitermo1 = "";
+    var unitermo2 = "";
+    var unitermo3 = "";
+    var unitermo4 = "";
+    var unitermo5 = "";
+
     $('#aprovacao_projeto').click(function() {
         //$('#formMonografia').attr('action', '/orientador/aprovaProjeto/'+$('#idTcc').val());
+        $(this).prop('disabled', true);
         $('#formMonografia').submit();
     });
 
@@ -80,6 +87,14 @@ $(document).ready(function(){
     });
 
     //$('#unitermo1').select2();
+
+    $('#modificarParametro').click( function() {
+        if ($(this).is(':checked')) {
+            $('#divParametro').show();
+        } else {
+            $('#divParametro').hide();
+        }
+    });
 
     if ($('#cadastroUnitermo1').is(':checked')) {
         $("#txtUnitermo1").show();
@@ -156,6 +171,38 @@ $(document).ready(function(){
             $('#unitermo5').prop( "disabled", false );
         }
     });
+
+    $("#txtUnitermo1").on("blur",function (){
+        unitermo1 = $(this).val();
+      });
+      $("#txtUnitermo2").on("blur",function (){
+          unitermo2 = $(this).val();
+      });
+      $("#txtUnitermo3").on("blur",function (){
+          unitermo3 = $(this).val();
+      });
+      $("#txtUnitermo4").on("blur",function (){
+          unitermo4 = $(this).val();
+      });
+      $("#txtUnitermo5").on("blur",function (){
+          unitermo5 = $(this).val();
+      });
+
+      $("#unitermo1").on ("change", function() {
+          unitermo1 = $(this).val();
+      });
+      $("#unitermo2").on ("change", function() {
+          unitermo2 = $(this).val();
+      });
+      $("#unitermo3").on ("change", function() {
+          unitermo3 = $(this).val();
+      });
+      $("#unitermo4").on ("change", function() {
+          unitermo4 = $(this).val();
+      });
+      $("#unitermo5").on ("change", function() {
+          unitermo5 = $(this).val();
+      });
 
     var $disabledResults = $(".js-example-disabled-results");
     $disabledResults.select2();

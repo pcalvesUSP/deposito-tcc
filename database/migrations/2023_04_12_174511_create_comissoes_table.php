@@ -19,8 +19,13 @@ class CreateComissoesTable extends Migration
             $table->string('nome',100);
             $table->string('email',100);
             $table->enum('papel', ['COORDENADOR', 'VICE-COORDENADOR', 'MEMBRO'])->default('MEMBRO');
+            $table->date('dtInicioMandato');
+            $table->date('dtFimMandato');
             $table->string('assinatura',100)->nullable();
             $table->timestamps();
+            $table->softDeletes();
+
+            $table->unique(['codpes','papel']);
         });
     }
 

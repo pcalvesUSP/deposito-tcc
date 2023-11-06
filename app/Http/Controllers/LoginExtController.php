@@ -37,19 +37,22 @@ class LoginExtController extends Controller
         
         $request->validate($rules, $mensagem);
 
-        $pass = crypt($request->input('senha'),"$5&jj");
-        
         $user = Orientador::where('email',$request->input('usuario'))->where('aprovado',true)->get();
         if (!$user->isEmpty())
-            $user = User::where('email',$request->input('usuario'))->where('password',$pass)->get();
+            $user = User::where('email',$request->input('usuario'))->get();
 
         if ($user->isEmpty()) {
             return "<script>alert('Erro ao realizar o login'); window.location='".route('home')."'</script>";
         } else {
-            $user = $user->first();
-            Auth::login($user);
-            $dadosLogin = $user->verificaIdentidade();
-            session(['orientadorExterno' => 1]);
+
+            if (password_verify($request->input('senha'), $user->first()->password)) {
+                $user = $user->first();
+                Auth::login($user);
+                $dadosLogin = $user->verificaIdentidade();
+                session(['orientadorExterno' => 1]);
+            } else {
+                return "<script>alert('Senha não confere'); window.location='".route('home')."'</script>";
+            }
         }
         
         return redirect(route('home'));

@@ -20,7 +20,7 @@ class CreateBancasTable extends Migration
             $table->string('nome',100);
             $table->string('email',100);
             $table->string('telefone',15)->nullable();
-            $table->string('intituicao_vinculo',150);
+            $table->string('instituicao_vinculo',150);
             $table->enum('papel',['PRESIDENTE','MEMBRO','SUPLENTE']);
             $table->integer('ordem');
             $table->integer('ano');

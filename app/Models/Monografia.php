@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\DB;
 
 class Monografia extends Model
@@ -49,7 +50,14 @@ class Monografia extends Model
      * Relação 1:N
      */
     public function bancas() {
-        return $this->hasMany(Banca::class);
+        return $this->hasMany(Banca::class)->orderBy('ordem');
+    }
+
+    /**
+     * Relação 1:N
+     */
+    public function notas() {
+        return $this->hasMany(Nota::class);
     }
     
     /**
@@ -122,7 +130,7 @@ class Monografia extends Model
      * @param id INT Opcional - Id da Monografia
      * @param orientador_id INT Opcional Id do Orientador
      */
-    public function getMonografiaByFiltro($filtro, $id = 0, $orientador_id = 0, $status = null) {
+    public function getMonografiaByFiltro($filtro, $id = 0, $orientador_id = 0, $status = null, $userComissao = 0) {
         $alunos = array();
         $orientadores = array();
 
@@ -147,18 +155,36 @@ class Monografia extends Model
         } else {
             $build->where('monografias.status',$status);
         }
+
+        if ($userComissao  > 0) {
+            $build->whereNotExists(function (Builder $query) {
+                                        $query->select(DB::raw(1))
+                                            ->from('avaliacoes')
+                                            ->whereColumn('avaliacoes.monografia_id', 'monografias.id');
+                                  });
+        }
         /*$build->where('alunos.nome','like','%'.$filtro.'%');
         $build->orWhere([['monografias.ano','=', $filtro]
                         ,['monografias.titulo','like','%'.$filtro.'%']
                         ]);*/
 
         $build->where('alunos.nome','like','%'.$filtro.'%');
+        $build->orWhere('alunos.id','like','%'.$filtro.'%');
         $build->orWhere('monografias.titulo','like','%'.$filtro.'%');
-        $build->orWhere('monografias.ano',$filtro);
+
+        if (strlen($filtro) > 4) {
+            if (strpos($filtro,"-") !== false) {
+                $anoSem = explode("-",$filtro);
+                $build->orWhere('monografias.ano','like','%'.$anoSem[0].'%');
+                $build->orWhere('monografias.semestre','like','%'.$anoSem[1].'%');
+            }
+        } else {
+            $build->orWhere('monografias.ano','like','%'.$filtro.'%');
+        }
         
         $build->orderBy("monografias.ano", "desc")->orderBy("alunos.nome")->orderBy("monografias.id");
         
-        $listMonografia = $build->distinct()->get();
+        $listMonografia = $build->distinct()->paginate(30);
 
         return $listMonografia;
     }

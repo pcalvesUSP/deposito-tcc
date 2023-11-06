@@ -1,6 +1,7 @@
 /node_modules
 /public/hot
 /public/upload/
+/public/declaracao_banca/
 /storage/*.key
 /vendor
 .env
@@ -9,3 +10,5 @@ Homestead.json
 Homestead.yaml
 npm-debug.log
 yarn-error.log
+git-lab-deposito-fcf
+git-lab-deposito-fcf.pub

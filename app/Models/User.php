@@ -88,7 +88,8 @@ class User extends Authenticatable
                 ,"codpes"   => $this->codpes
         ];
         $retArray["usuarioLogado"] = $user;
-
+        User::firstOrCreate($user);
+        
         if (empty(auth()->user()->codpes)) {   
 
             if (Orientador::where('email', auth()->user()->email)->count() > 0) {
@@ -101,8 +102,8 @@ class User extends Authenticatable
             }
 
         } else {
+
             $dadosLoginas = session("senhaunica-socialite.undo_loginas");
-    
             $pessoaVinculos = Pessoa::vinculosSiglas(auth()->user()->codpes);
             //$vinculo = $pessoaVinculos[array_key_first($pessoaVinculos)];
 
@@ -115,14 +116,10 @@ class User extends Authenticatable
 
             switch($vinculo) {
                 case "ALUNOGR":
-                    if (User::where('codpes',$user["codpes"])->count() == 0) {
-                        User::create($user);
-                    }
-                        
                     if (!auth()->user()->hasRole('aluno')) 
                         auth()->user()->assignRole('aluno');
                     
-                    if (!auth()->user()->can('userAluno'))
+                    if (!auth()->user()->hasPermissionTo('userAluno'))
                         auth()->user()->givePermissionTo('userAluno');
 
                     break;
@@ -130,56 +127,81 @@ class User extends Authenticatable
                 case "SEM VINCULO":
 
                     if (Orientador::where("email",auth()->user()->email)->count() > 0) {
-                        if (User::where('email',$user['email'])->count() == 0) {
-                            User::create($user);
-                        }
                         
                         if (!auth()->user()->hasRole('orientador')) 
                             auth()->user()->assignRole('orientador');
                             
-                        if (!auth()->user()->can('userOrientador'))
+                        if (!auth()->user()->hasPermissionTo('userOrientador'))
                             auth()->user()->givePermissionTo('userOrientador');
 
-                    } elseif (Comissao::where("codpes",auth()->user()->codpes)->count() > 0) {
-                        if (User::where('codpes',$user['codpes'])->count() == 0) {
-                            User::create($user);
-                        }
-
+                    } else {
+                        if (auth()->user()->hasRole('orientador')) 
+                            auth()->user()->removeRole('orientador');
+                            
+                        if (auth()->user()->hasPermissionTo('userOrientador'))
+                            auth()->user()->revokePermissionTo('userOrientador');
+                    }
+                    if (Comissao::where("codpes",auth()->user()->codpes)
+                                ->where('dtInicioMandato','<=', date_create('now')->format('Y-m-d'))
+                                ->where('dtFimMandato', '>=', date_create('now')->format('Y-m-d'))
+                                ->count() > 0) {
+                        
                         if (!auth()->user()->hasRole('avaliador')) 
                             auth()->user()->assignRole('avaliador');
                             
-                        if (!auth()->user()->can('userAvaliador'))
+                        if (!auth()->user()->hasPermissionTo('userAvaliador'))
                             auth()->user()->givePermissionTo('userAvaliador');
+
+                        if (!auth()->user()->hasPermissionTo('userComissao'))
+                            auth()->user()->givePermissionTo('userComissao');
                         
                     } else {
-                        
-                        $arrayGerentes = explode(',',env('SENHAUNICA_GERENTES'));
-                        $arrayAdmins = explode(',',env('SENHAUNICA_ADMINS'));
 
-                        if (array_search(auth()->user()->codpes,$arrayGerentes) !== false ||
-                            array_search(auth()->user()->codpes,$arrayAdmins) !== false ) {
+                        if (auth()->user()->hasRole('avaliador')) 
+                            auth()->user()->removeRole('avaliador');
                             
-                            if ( User::where('codpes',auth()->user()->codpes)->count() == 0 ) {
-                                User::create($user);
-                            }
-                            
-                            if (array_search(auth()->user()->codpes,$arrayAdmins) !== false && 
-                                !auth()->user()->can('admin')) 
-                            {
-                                auth()->user()->givePermissionTo('admin');
-                            } else {
-                                if (!auth()->user()->hasRole('graduacao')) 
-                                    auth()->user()->assignRole('graduacao');
-                                
-                                if (!auth()->user()->can('userGraduacao')) 
-                                    auth()->user()->givePermissionTo('userGraduacao');
-                            }
-                        } 
+                        if (auth()->user()->hasPermissionTo('userAvaliador'))
+                            auth()->user()->revokePermissionTo('userAvaliador');
+
+                        if (auth()->user()->hasPermissionTo('userComissao'))
+                            auth()->user()->revokePermissionTo('userAvaliador');
                     }
+                        
+                    $arrayGerentes = explode(',',env('SENHAUNICA_GERENTES'));
+                    $arrayAdmins = explode(',',env('SENHAUNICA_ADMINS'));
+
+                    if (array_search(auth()->user()->codpes,$arrayAdmins) !== false ) 
+                    {
+                            if (!auth()->user()->hasPermissionTo('userAdmin'))
+                                auth()->user()->givePermissionTo('userAdmin');
+
+                            if (!auth()->user()->hasPermissionTo('admin','senhaunica'))
+                                auth()->user()->givePermissionTo('admin');
+                    }
+
+                    if (array_search(auth()->user()->codpes,$arrayGerentes) !== false ) {
+                        
+                        if (!auth()->user()->hasRole('graduacao')) 
+                            auth()->user()->assignRole('graduacao');
+                         
+                        if (!auth()->user()->hasPermissionTo('userGraduacao')) 
+                            auth()->user()->givePermissionTo('userGraduacao');
+                        
+                    } 
+                    
                     break;
             }
 
         }
         return $retArray;
+    }
+
+    public function isManagedByEnv() {
+
+        $arrayAdmins = explode(',',env('SENHAUNICA_ADMINS'));
+        if (array_search(auth()->user()->codpes,$arrayAdmins) !== false)
+            return true;
+        else
+            return false;
     }
 }

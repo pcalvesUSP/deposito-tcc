@@ -3,8 +3,8 @@
 @section('content')
 
 <div class="erro" id="mensagem"> {{ $mensagem }}</div>
-<p style="align:right"><a href="orientador/novoCadastro">Cadastrar Novo</a></p>
-<h1>Orientadores</h1>
+@if (strpos($_GET['route'],"comissao") === false) <p style="align:right"><a href="orientador/novoCadastro">Cadastrar Novo</a></p> @endif
+<h1>Orientadores @if (strpos($_GET['route'],"comissao") !== false) para Aprovação @endif</h1>
 
 <table class="tableData">
     <thead>
@@ -32,12 +32,12 @@
     <tr>
         <td style="width:16%;" class="tableData"> {{ $orientador->codpes }} </td>
         <td style="width:16%;" class="tableData"> {{ $orientador->CPF }} </td>
-        <td style="width:16%;" class="tableData"> {{ $orientador->nome }} </td>
+        <td style="width:16%;" class="tableData"> {{ $orientador->nome }} @if (!empty($orientador->nusp_aprovador)) <br/><span style="color:red;">Cadastro já {{ ($orientador->aprovado)?'Aprovado':'Reprovado' }}. N.USP Aprovador: {{ $orientador->nusp_aprovador }} </span> @endif </td>
         <td style="width:16%;" class="tableData"> {{ $orientador->email }} </td>
         <td style="width:16%;" class="tableData"> {{ $orientador->externo==0? "N" : "S" }} </td>
         <td style="width:16%;" class="tableData"> {{ $orientador->aprovado==0? "N" : "S" }} </td>
-        <td style="width:3.7%;" class="tableData"><a href="{{ route('orientador.edit', ['id'=>$orientador->id]) }}">Editar</a></td>
-        @if ($orientador->aprovado==0 && $orientador->externo==1)
+        <td style="width:3.7%;" class="tableData"><a href="{{ route('orientador.edit', ['id'=>$orientador->id]) }}">@if (strpos($_GET['route'],"comissao") === false) Editar @else Visualizar @endif </a></td>
+        @if (!$orientador->aprovado && $orientador->externo && empty($orientador->nusp_aprovador))
         <td style="width:3.7%;" class="tableData"><a href="{{ route('graduacao.aprova.cadastro', ['id'=>$orientador->id,'aprovacao'=>1]) }}">Aprovar</a>&nbsp;
                                                   <a href="{{ route('graduacao.aprova.cadastro', ['id'=>$orientador->id,'aprovacao'=>0]) }}">Reprovar</a>
         </td>
@@ -45,11 +45,16 @@
         <td style="width:3.7%;" class="tableData">---</td>            
         @endif
         <td style="width:3.7%;" class="tableData">
+        @if (strpos($_GET['route'],"comissao") === false)
         <form id="deleteOrientador_{{ $orientador->id }}" action={{ route('orientador.destroy', ['id'=>$orientador->id])}} method="post"> 
         @csrf
         @method('DELETE') 
         <input type="submit" value="Excluir" style="background-color:transparent;" onmouseover="return $(this).css({'color':'blue','text-decoration':'underline'})" onmouseout="return $(this).css({'color':'black','text-decoration':'none'})">
-        </form></td>
+        </form>
+        @else
+        &nbsp;
+        @endif
+        </td>
     </tr>
     @endif
     @endforeach
@@ -63,11 +68,17 @@
 
     $( document ).ready(function(){
 
-        $("#filtro").keyup(function() {
-            if ($(this).val().length > 3) {
-                document.getElementById("filtrarOrientador").submit();
+       $("#filtro").keypress(function( event ) {
+            if (event.which == 13) {
+                if ($(this).val().length >= 3) {
+                    document.getElementById("filtrarOrientador").submit();
+                } else {
+                    alert("O termo a ser localizado deve conter 3 ou mais caracteres.");
+                    return false;
+                }
             }
         });
+        
     });
 
 </script>

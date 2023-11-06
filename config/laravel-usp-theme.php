@@ -25,7 +25,7 @@
 
 $alunos = [
     [
-        'text' => 'Cadastro Monografia',
+        'text' => 'Cadastro de Projeto',
         'url' => '/alunos/cadastroMonografia/',
         'can' => 'userAluno'
     ],
@@ -38,23 +38,36 @@ $alunos = [
 
 $orientadores = [
     [
-        'text' => 'Listar Monografias',
+        'text' => 'Listar Projetos',
         'url' => '/orientador/lista_monografia',
         'can' => 'userOrientador'
     ],
 ];
 
+$avaliador = [
+    [
+        'text' => 'Listar Projetos',
+        'url' => '/graduacao/lista_monografia',
+        'can' => 'userAvaliador'
+    ],
+];
+
 $comissao = [
     [
-        'text' => 'Listar Monografias',
-        'url' => '/orientador/lista_monografia',
-        'can' => 'userAvaliador'
+        'text' => 'Listar Projetos (Indicar Parecerista)',
+        'url' => '/comissao/lista_monografia',
+        'can' => 'userComissao'
+    ],
+    [
+        'text' => 'Aprovação de Orientadores',
+        'url' => '/comissao/orientador/',
+        'can' => 'userComissao'
     ],
 ];
 
 $graduacao = [
     [
-        'text' => 'Listar Monografias',
+        'text' => 'Listar Projetos',
         'url' => '/orientador/lista_monografia',
         'can' => 'userGraduacao'
     ],
@@ -69,7 +82,7 @@ $graduacao = [
         'can' => 'userGraduacao'
     ],
     [
-        'text' => 'Cadastro - Áreas Temáticas',
+        'text' => 'Cadastro de Áreas Temáticas',
         'url' => '/graduacao/area_tematica/',
         'can' => 'userGraduacao'
     ],
@@ -79,7 +92,7 @@ $graduacao = [
         'can' => 'userGraduacao'
     ],
     [
-        'text' => 'Cadastro de Banca',
+        'text' => 'Listagem de Banca',
         'url' => 'graduacao/banca',
         'can' => 'userGraduacao'
     ],
@@ -111,7 +124,7 @@ $menu = [
     ],
     [
         'text' => 'Avaliadores',
-        'submenu' => $comissao,
+        'submenu' => $avaliador,
         //'url' => 'gerente',
         'can' => 'userAvaliador',
     ],
@@ -122,9 +135,14 @@ $menu = [
         'can' => 'userOrientador',
     ],
     [
-        'text' => 'Graduação',
+        'text' => 'Comissão',
         'submenu' => $graduacao,
         'can' => 'userGraduacao',
+    ],
+    [
+        'text' => 'Comissão',
+        'submenu' => $comissao,
+        'can' => 'userComissao',
     ],
     /*[
         'text' => 'Está logado',
@@ -162,7 +180,7 @@ return [
     'title' => config('app.name'),
 
     # USP_THEME_SKIN deve ser colocado no .env da aplicação
-    'skin' => env('USP_THEME_SKIN', 'eeusp'),
+    'skin' => env('USP_THEME_SKIN', 'fcf'),
 
     # chave da sessão. Troque em caso de colisão com outra variável de sessão.
     'session_key' => 'laravel-usp-theme',

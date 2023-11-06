@@ -53,10 +53,10 @@ class verificaCPF implements Rule
             for ($t = 9; $t < 11; $t++) {
                 
                 for ($d = 0, $c = 0; $c < $t; $c++) {
-                    $d += $value{$c} * (($t + 1) - $c);
+                    $d += $value[$c] * (($t + 1) - $c);
                 }
                 $d = ((10 * $d) % 11) % 10;
-                if ($value{$c} != $d) {
+                if ($value[$c] != $d) {
                     return false;
                 }
             }

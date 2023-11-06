@@ -19,13 +19,17 @@ class CreateMonografiasTable extends Migration
             $table->boolean('dupla')->default(0);
             $table->enum('status', ['AGUARDANDO APROVACAO ORIENTADOR'
                                    ,'AGUARDANDO AVALIACAO'
-                                   ,'AGUARDANDO CORREÇÃO DO PROJETO'
-                                   ,'AGUARDARDANDO ARQUIVO TCC'
+                                   ,'AGUARDANDO CORRECAO DO PROJETO'
+                                   ,'AGUARDANDO NOTA DO PROJETO'
+                                   ,'AGUARDANDO ARQUIVO TCC'
+                                   ,'AGUARDANDO APROVACAO BANCA'
                                    ,'AGUARDANDO VALIDACAO DA BANCA'
-                                   ,'AGUARDANDO NOTA'
+                                   ,'AGUARDANDO DEFESA'
+                                   ,'AGUARDANDO NOTA DO TCC'
                                    ,'CONCLUIDO']);
+            $table->enum('curriculo',['9012','9013']);
             $table->string('titulo',255);
-            $table->string('resumo',255);
+            $table->text('resumo');
             $table->text('introducao');
             $table->text('objetivo');
             $table->text('material_metodo');
@@ -33,9 +37,12 @@ class CreateMonografiasTable extends Migration
             $table->text('aspecto_etico');
             $table->text('referencias');
             $table->boolean('publicar')->nullable();
+            $table->boolean('aluno_autoriza_publicar')->nullable();
             $table->string('path_arq_tcc', 250)->nullable();
             $table->integer('ano');
             $table->integer('semestre');
+
+            $table->index(['ano','semestre']);
         });
     }
 

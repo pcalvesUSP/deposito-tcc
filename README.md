@@ -10,6 +10,11 @@ O Login é realizado através da senha única.</p>
 </p>
 <p>Orientador (todos os docentes cadastrados como orientadores neste sistema)<br/>
 <ul>
+    <li>Aprova ou Reprova Monografia</li>
+</ul>
+</p>
+<p>Avaliador (todos os docentes cadastrados como membros da Comissão neste sistema)<br/>
+<ul>
     <li>Avalia e corrige a Monografia</li>
     <li>Aprova ou Reprova Monografia</li>
 </ul>

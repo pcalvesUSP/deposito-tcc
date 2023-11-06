@@ -164,7 +164,7 @@ $( document ).ready(function(){
                           $("#suplente").val(data.nome);
                           $("#emailSuplente").val(data.email);
                           $("#telefoneSuplente").val(data.telefone);
-                          $("#instituicaosuplente").val(data.instituicao);
+                          $("#instituicaoSuplente").val(data.instituicao);
                       } 
                   }
                  },
@@ -173,6 +173,18 @@ $( document ).ready(function(){
                       alert("Erro ao buscar dados de Membro da Comissão, verifique o número digitado.");
                  }
             });
+        }
+      });
+
+      $("#aprovacao_orientador_banca_n").click(function() {
+        if ($(this).is(":checked")) {
+            $('#orientacao').show();
+        }
+      });
+
+      $("#aprovacao_orientador_banca_s").click(function() {
+        if ($(this).is(":checked")) {
+            $('#orientacao').hide();
         }
       });
 	

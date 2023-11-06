@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\Parametro;
+use App\Models\Aluno;
 use App\Rules\VerificaDatas;
 
 class ParametroController extends Controller
@@ -27,6 +28,7 @@ class ParametroController extends Controller
         if (empty($ano))
             $ano = date("Y");
 
+        $dadosSemestre = Parametro::select('semestre','ano')->distinct()->orderBy('semestre')->orderBy('ano','desc')->get();
         $dadosParam = Parametro::where("ano",$ano)->where('semestre',$semestre)->get();
 
         if (!$dadosParam->isEmpty()) {
@@ -40,7 +42,23 @@ class ParametroController extends Controller
             $dadosParam->first()->dataAberturaUploadTCC = date_create($dadosParam->first()->dataAberturaUploadTCC);
             $dadosParam->first()->dataFechamentoUploadTCC = date_create($dadosParam->first()->dataFechamentoUploadTCC);
         }
-        return view('cadastro-parametro', ["dadosParam" => $dadosParam, "acao"=> $acao, "mensagem" => $msg]);
+        return view('cadastro-parametro', ["dadosParam" => $dadosParam, 
+                                           "acao"=> $acao, 
+                                           "mensagem" => $msg,
+                                           "dadosSemestre" =>$dadosSemestre
+                                          ]);
+    }
+
+    /**
+     * Ajax de busca de dados de Parâmetros
+     * @param int ano
+     * @param int semestre 
+     */
+    public function ajaxBuscaDadosParametro($ano,$semestre) {
+        $dadosParam = Parametro::where("ano",$ano)->where('semestre',$semestre)->get();
+
+        return $dadosParam->first();
+
     }
 
     /**
@@ -192,6 +210,46 @@ class ParametroController extends Controller
     }
 
     /**
+     * Update the specified resource in storage.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\Http\Response
+     */
+    public function modificaParametro(Request $request)
+    {
+        
+        $msg = null;
+        $rules = ["paramMonografia" => ["required"]];
+        
+        $mensagens = ["required" => "O campo :attribute é obrigatório"];
+        
+        $request->validate($rules,$mensagens);
+        
+        $aluno = Aluno::where('monografia_id',$request->input('monografiaId'))->get();
+        $parametro = Parametro::find($request->input('paramMonografia'));
+        
+        $buscaParam = Parametro::where('codpes',$aluno->first()->id)->get();
+        if (!$buscaParam->isEmpty()) {
+            $buscaParam->first()->delete();
+        }
+        $objParametro = new Parametro;
+        $objParametro->dataAberturaDiscente     = $parametro->dataAberturaDiscente;
+        $objParametro->dataFechamentoDiscente   = $parametro->dataFechamentoDiscente;
+        $objParametro->dataAberturaDocente      = $parametro->dataAberturaDocente;
+        $objParametro->dataFechamentoDocente    = $parametro->dataFechamentoDocente;
+        $objParametro->dataAberturaAvaliacao    = $parametro->dataAberturaAvaliacao;
+        $objParametro->dataFechamentoAvaliacao  = $parametro->dataFechamentoAvaliacao;
+        $objParametro->dataAberturaUploadTCC    = $parametro->dataAberturaUploadTCC;
+        $objParametro->dataFechamentoUploadTCC  = $parametro->dataFechamentoUploadTCC;
+        $objParametro->codpes                   = $aluno->first()->id;
+        $objParametro->ano                      = $parametro->ano;
+        $objParametro->semestre                 = $parametro->semestre;
+        $objParametro->save();
+
+        return redirect()->route('graduacao.edicao',['idMono'=>$request->input('monografiaId')]);
+    }
+
+    /**
      * Remove the specified resource from storage.
      *
      * @param  int  $id
@@ -199,6 +257,12 @@ class ParametroController extends Controller
      */
     public function destroy($id)
     {
+        
+        $parametro = Parametro::find($id);
+        if (!empty($parametro->codpes)) {
+            $parametro->delete();
+        }
+        
         $this->index();
     }
 }

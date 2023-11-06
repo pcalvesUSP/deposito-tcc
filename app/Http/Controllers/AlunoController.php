@@ -129,35 +129,36 @@ class AlunoController extends Controller
      * Salvar dados da Banca
      *
      * @param  \Illuminate\Http\Request  $request
-     * @param  int  $id
      * @return \Illuminate\Http\Response
      */
     public function salvarBanca(Request $request)
     {
-        $rules['data1']           = ["required", new VerificaDatas];
-        $rules['data2']           = ["required", new VerificaDatas];
-        $rules['data3']           = ["required", new VerificaDatas];
-        $rules['horario1']        = ["required"];
-        $rules['horario2']        = ["required"];
-        $rules['horario3']        = ["required"];
-        $rules['telefone1']       = ["required","min:10"];
-        $rules['membroBanca2']    = ["required","min:3","max:100"];
-        $rules['emailBanca2']     = ["required","email"];
-        $rules['telefone2']       = ["required","min:10"];
-        $rules['membroBanca3']    = ["required","min:3","max:100"];
-        $rules['emailBanca3']     = ["required","email"];
-        $rules['telefone3']       = ["required","min:10"];
-        $rules['suplente']        = ["required","min:3","max:100"];
-        $rules['emailSuplente']   = ["required","email"];
-        $rules['telefoneSuplente']= ["required","min:10"];
-        $rules['cienteOrientador']= ["required"];
-        $rules['path_arq_tcc']    = ["file","required","mimes:pdf"];
+        $rules['data1']                 = ["required", new VerificaDatas];
+        $rules['data2']                 = ["required", new VerificaDatas];
+        $rules['data3']                 = ["required", new VerificaDatas];
+        $rules['horario1']              = ["required"];
+        $rules['horario2']              = ["required"];
+        $rules['horario3']              = ["required"];
+        $rules['telefone1']             = ["required","min:10"];
+        $rules['membroBanca2']          = ["required","min:3","max:100"];
+        $rules['emailBanca2']           = ["required","email"];
+        $rules['telefone2']             = ["required","min:10"];
+        $rules['instituicao2']          = ["required","min:3"];
+        $rules['membroBanca3']          = ["required","min:3","max:100"];
+        $rules['emailBanca3']           = ["required","email"];
+        $rules['telefone3']             = ["required","min:10"];
+        $rules['instituicao3']          = ["required","min:3"];
+        $rules['suplente']              = ["required","min:3","max:100"];
+        $rules['emailSuplente']         = ["required","email"];
+        $rules['telefoneSuplente']      = ["required","min:10"];
+        $rules['instituicaoSuplente']   = ["required","min:3"];
+        $rules['path_arq_tcc']          = ["file","required","mimes:pdf"];
+        $rules['aluno_autoriza_publicar']= "required";
 
-        $messages["required.cienteOrientador"]  = "O Orientador precisa estar ciente da composição da banca.";
-        $messages["required"]                   = "O campo :attribute é obrigatório";
-        $messages["min"]                        = "O campo :attribute precisa conter no mínimo :min caracteres";
-        $messages["max"]                        = "O campo :attribute deverá conter no máximo :max caracteres";
-        $messages["file"]                       = "O arquivo não é válido";
+        $messages["required"] = "O campo :attribute é obrigatório";
+        $messages["min"]      = "O campo :attribute precisa conter no mínimo :min caracteres";
+        $messages["max"]      = "O campo :attribute deverá conter no máximo :max caracteres";
+        $messages["file"]     = "O arquivo não é válido";
 
         $request->validate($rules,$messages);
 
@@ -251,33 +252,182 @@ class AlunoController extends Controller
            $banca->ano                  = date('Y');
            $banca->save();
 
-           $monografia = Monografia::find($request->input('monografiaId'));
            $monografia->path_arq_tcc = $nomeArq;
+           $monografia->aluno_autoriza_publicar = $request->input('aluno_autoriza_publicar');
            $monografia->status       = "AGUARDANDO VALIDACAO DA BANCA";
            $monografia->update();
 
-           $txtMensagem = "Foi indicada banca para apresentação de TCC.                            
+           $aluno = Aluno::where('monografia_id',$monografia->id)->get();
+           $orientador = Orientador::whereRelation('monografias','monografia_id',$monografia->id)->get();
+
+           $assunto = "Você acaba de receber uma banca para ciência e aprovação.";
+
+           $txtMensagem = "Você acaba de receber uma banca para ciência e aprovação referente ao projeto abaixo:               
            ";
-           $txtMensagem.= "Entre no sistema para validar a Defesa         
+           $txtMensagem.= "**Alun@:** ".$aluno->first()->nome."                                     
+           ";
+           $txtMensagem.= "**Orientador(a):** ".$orientador->first()->nome."                                
+           ";
+           $txtMensagem.= "**Título:** ".$monografia->titulo."                                       
+           ";
+           $txtMensagem.= "**Você tem o prazo de 3 dias úteis.**                          
            ";
 
-           Mail::to("pcalves@usp.br", "Comissão TCC")
-                    ->send(new NotificacaoOrientador($txtMensagem, "[".config('app.name')."] Nova Defesa cadastrada para TCC titulo ".$monografia->titulo, "Comissão TCC"));
-           /*Mail::to("ctcc.fcf@usp.br", "Comissão TCC")
-                    ->send(new NotificacaoOrientador($txtMensagem, "[".config('app.name')."] Nova Defesa cadastrada para TCC titulo ".$monografia->titulo, "Comissão TCC"));*/
+           /*Mail::to("pcalves@usp.br", $orientador->first()->nome)
+                    ->send(new NotificacaoOrientador($txtMensagem, $assunto, $orientador->first()->nome));*/
+           Mail::to($orientador->first()->email, $orientador->first()->nome)
+                    ->send(new NotificacaoOrientador($txtMensagem, $assunto, $orientador->first()->nome));
 
-           $mensagem = "Defesa indicada, aguarde validação da Comissão de TCC";
+           $mensagem = "Defesa indicada, aguarde validação do Orientador";
         } else {
             $mensagem = "Erro no cadastro da Defesa";
         }
+
+        print "<script>alert('$mensagem'); </script>";
 
         return redirect()->route('alunos.index', 
                                 ['monografiaId' => $request->input('monografiaId')
                                 ,'ano' => date('Y')
                                 ,'mensagem' => $mensagem
                                 ]);
+    }
+
+    /**
+     * Corrigir dados de banca
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\Http\Response
+     */
+    public function corrigirBanca(Request $request) {
+
+        $rules['data1']             = ["required", new VerificaDatas];
+        $rules['data2']             = ["required", new VerificaDatas];
+        $rules['data3']             = ["required", new VerificaDatas];
+        $rules['horario1']          = ["required"];
+        $rules['horario2']          = ["required"];
+        $rules['horario3']          = ["required"];
+        $rules['telefone1']         = ["required","min:10"];
+        $rules['membroBanca2']      = ["required","min:3","max:100"];
+        $rules['emailBanca2']       = ["required","email"];
+        $rules['telefone2']         = ["required","min:10"];
+        $rules['instituicao2']      = ["required","min:3"];
+        $rules['membroBanca3']      = ["required","min:3","max:100"];
+        $rules['emailBanca3']       = ["required","email"];
+        $rules['telefone3']         = ["required","min:10"];
+        $rules['instituicao3']      = ["required","min:3"];
+        $rules['suplente']          = ["required","min:3","max:100"];
+        $rules['emailSuplente']     = ["required","email"];
+        $rules['telefoneSuplente']  = ["required","min:10"];
+        $rules['instituicaoSuplente']= ["required","min:3"];
         
-        return var_dump($request->all());
+        $messages["required"] = "O campo :attribute é obrigatório";
+        $messages["min"]      = "O campo :attribute precisa conter no mínimo :min caracteres";
+        $messages["max"]      = "O campo :attribute deverá conter no máximo :max caracteres";
+        
+        $request->validate($rules,$messages);
+
+        $monografia = Monografia::with(['orientadores', 'alunos'])
+                                   ->find($request->input('monografiaId'));     
+        
+        if ($request->hasFile('path_arq_tcc') && $request->file('path_arq_tcc')->isValid()) {
+            
+            $arquivo = $request->file('path_arq_tcc');
+            $nomeArq = $arquivo->getClientOriginalName();
+
+            if (!$arquivo->move(public_path('upload'),$nomeArq)) {
+                $mensagem = "Erro ao copiar o arquivo";
+                return "<script> alert('M26-Erro ao copiar o arquivo.'); 
+                                       window.location.assign('".route('alunos.index', 
+                                                                    ['monografiaId' => $request->input('monografiaId')
+                                                                    ,'ano' => date('Y')
+                                                                    ,'mensagem' => $mensagem
+                                                                    ])."');
+                    </script>";
+            } else {
+                if (!empty($monografia->path_arq_tcc) && $monografia->path_arq_tcc <> $nomeArq) {
+                    File::delete('upload/'.$objMonografia->path_arq_tcc);
+                }                
+                $monografia->path_arq_tcc = $nomeArq; 
+            }
+        }
+        if ($request->filled('aluno_autoriza_publicar'))
+            $monografia->aluno_autoriza_publicar = $request->input('aluno_autoriza_publicar');
+        
+        $monografia->update();   
+
+        $dataDefesa1 = explode("/",$request->input('data1'));
+        $dataDefesa2 = explode("/",$request->input('data2'));
+        $dataDefesa3 = explode("/",$request->input('data3'));
+
+        $defesa = Defesa::where('monografia_id',$request->input('monografiaId'))->get();
+        $defesa->first()->dataDefesa1 = date_create($dataDefesa1[2]."/".$dataDefesa1[1]."/".$dataDefesa1[0]." ".$request->input('horario1').":00");
+        $defesa->first()->dataDefesa2 = date_create($dataDefesa2[2]."/".$dataDefesa2[1]."/".$dataDefesa2[0]." ".$request->input('horario2').":00");
+        $defesa->first()->dataDefesa3 = date_create($dataDefesa3[2]."/".$dataDefesa3[1]."/".$dataDefesa3[0]." ".$request->input('horario3').":00");
+        $defesa->first()->aprovacao_orientador = null;
+
+        if($defesa->first()->update()) {
+
+           $dadosOrientador = Orientador::find($request->input('orientadorId'));
+           $banca = Banca::where('monografia_id',$request->input('monografiaId'))->orderBy('ordem')->get();
+
+           foreach($banca as $objBanca) {
+                if ($objBanca->papel == "PRESIDENTE")
+                    continue;
+
+                if ($objBanca->ordem == 2) {
+                    $objBanca->codpes               = $request->input('nusp2');
+                    $objBanca->nome                 = $request->input('membroBanca2');
+                    $objBanca->email                = $request->input('emailBanca2');
+                    $objBanca->telefone             = $request->input('telefone2');
+                    $objBanca->instituicao_vinculo  = $request->input('instituicao2');
+                }
+                if ($objBanca->ordem == 3) {
+                    $objBanca->codpes               = $request->input('nusp3');
+                    $objBanca->nome                 = $request->input('membroBanca3');
+                    $objBanca->email                = $request->input('emailBanca3');
+                    $objBanca->telefone             = $request->input('telefone3');
+                    $objBanca->instituicao_vinculo  = $request->input('instituicao3');
+                }
+                if ($objBanca->ordem == 4) {
+                    $objBanca->codpes               = $request->input('nuspSuplente');
+                    $objBanca->nome                 = $request->input('suplente');
+                    $objBanca->email                = $request->input('emailSuplente');
+                    $objBanca->telefone             = $request->input('telefoneSuplente');
+                    $objBanca->instituicao_vinculo  = $request->input('instituicaoSuplente');
+                }
+                $objBanca->update();
+           }     
+
+           $assunto = "O aluno realizou a correção da banca";
+
+           $txtMensagem = "Você acaba de receber a correção da banca realizada pelo aluno conforme suas orientações para ciência e aprovação referente ao projeto abaixo:               
+           ";
+           $txtMensagem.= "**Alun@:** ".$monografia->alunos->first()->nome."                                     
+           ";
+           $txtMensagem.= "**Orientador(a):** ".$monografia->orientadores->first()->nome."                                
+           ";
+           $txtMensagem.= "**Título:** ".$monografia->titulo."                                       
+           ";
+           $txtMensagem.= "**Você tem o prazo de 3 dias úteis.**                          
+           ";
+
+           /*Mail::to("pcalves@usp.br", $monografia->orientadores->first()->nome)
+                    ->send(new NotificacaoOrientador($txtMensagem, $assunto, $monografia->orientadores->first()->nome));*/
+           Mail::to($monografia->orientadores->first()->email, $monografia->orientadores->first()->nome)
+                    ->send(new NotificacaoOrientador($txtMensagem, $assunto, $monografia->orientadores->first()->nome));
+
+           $mensagem = "Defesa corrigida, aguarde validação do Orientador";
+        } else {
+            $mensagem = "Erro no cadastro da Defesa";
+        }
+
+        print "<script>alert('$mensagem'); </script>";
+
+        return redirect()->route('alunos.index', 
+                                ['monografiaId' => $request->input('monografiaId')
+                                ,'ano' => date('Y')
+                                ,'mensagem' => $mensagem
+                                ]);
     }
     
 }

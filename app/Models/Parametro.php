@@ -12,20 +12,40 @@ class Parametro extends Model
     /**
      * Método para busca de parâmetros gerais ou do usuário.
      */
-    static function getDadosParam() {
+    static function getDadosParam($id_monografia = 0) {
         
         $dtAtual = date_create('now');
         $semestre = 1;
         if ($dtAtual->format('n') > 6)
             $semestre = 2;
 
-        $dadosParam = Parametro::where("ano",date("Y"))->where('semestre',$semestre)->where('codpes',auth()->user()->codpes)->get();
-        if ($dadosParam->isEmpty()) {
-            $dadosParam = Parametro::where("ano",date("Y"))->where('semestre',$semestre)->whereNull('codpes')->get();
-            if ($dadosParam->isEmpty())
-                return false;
+        $aluno = Aluno::where('monografia_id',$id_monografia)->get();
+
+        if (!$aluno->isEmpty()) {
+            $dadosParam = Parametro::where('codpes',$aluno->first()->id)->get();
+        } else {
+            $dadosParam = Parametro::where('codpes',auth()->user()->codpes)->get();
         }
-        
+
+        if ($dadosParam->isEmpty()) {
+            if ($id_monografia > 0) {
+                $dadosMonografia = Monografia::find($id_monografia);
+                $dadosParam = Parametro::where("ano",$dadosMonografia->ano)
+                                        ->where('semestre',$dadosMonografia->semestre)
+                                        ->get();
+
+            } else {
+                $dadosParam = Parametro::where("ano",date("Y"))
+                                        ->where('semestre',$semestre)
+                                        ->whereNull('codpes')->get();
+                
+                
+            }
+        }      
+          
+        if ($dadosParam->isEmpty())
+            return false;
+
         $dadosParam->first()->dataAberturaDiscente = date_create($dadosParam->first()->dataAberturaDiscente);
         $dadosParam->first()->dataFechamentoDiscente = date_create($dadosParam->first()->dataFechamentoDiscente);
         $dadosParam->first()->dataAberturaDocente = date_create($dadosParam->first()->dataAberturaDocente);

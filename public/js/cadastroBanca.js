@@ -1,10 +1,15 @@
 $( document ).ready(function(){
 
-    $("#filtro").keyup(function() {
-        if ($(this).val().length > 3) {
-            document.getElementById("filtrarBanca").submit();
-        }
-    });
+	$("#filtro").keypress(function( event ) {
+		if (event.which == 13) {
+			if ($(this).val().length >= 3) {
+				document.getElementById("filtrarBanca").submit();
+			} else {
+				alert("O termo a ser localizado deve conter 3 ou mais caracteres.");
+				return false;
+			}
+		}
+	});
     
 	$("#numUSPBanca").blur(function() {	    
 	    if ($(this).val().length > 3) {

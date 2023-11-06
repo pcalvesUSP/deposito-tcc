@@ -13,16 +13,18 @@ class NotificacaoAluno extends Mailable
 
     public $textoMensagem;
     public $nome;
+    public $assunto;
 
     /**
      * Create a new message instance.
      *
      * @return void
      */
-    public function __construct(string $textoMsg, string $nome)
+    public function __construct(string $textoMsg, string $nome, string $assunto = null)
     {
         $this->textoMensagem = $textoMsg;
         $this->nome = $nome;
+        $this->assunto = $assunto;
     }
 
     /**
@@ -32,6 +34,11 @@ class NotificacaoAluno extends Mailable
      */
     public function build()
     {
-        return $this->markdown('emails.mensagem_aluno')->subject("[SISTEMA DEPÓSITO TCC] Novo Parecer Cadastrado");
+        if (empty($this->assunto)) {
+            $assunto = "Nova avaliação da Comissão";
+        } else {
+            $assunto = $this->assunto;
+        }
+        return $this->markdown('emails.mensagem_aluno')->subject("[SISTEMA DEPÓSITO TCC] ".$assunto);
     }
 }

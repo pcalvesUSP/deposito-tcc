@@ -1,8 +1,7 @@
 @extends('layouts.app')
 
 @section('content')
-
-<h1 style="text-align:center;">Lista de Monografias @if ($userLogado == "Orientador") para avaliação @endif </h1>
+<h1 style="text-align:center;">Lista de Projetos @if (strpos($userLogado,'Avaliador') !== false && strpos($_GET['route'],"graduacao") !== false) para Avaliação @elseif ($indicarParecerista) para Indicação de Parecerista @else para Orientação @endif </h1>
 
 <table class="tableData" id="listMonografias" border="1">
     <thead>
@@ -12,10 +11,12 @@
         <tr>
             <th colspan="7" style="text-align:center;background:#c6c2eb;">
                 Andamento:
-                <select name="filtroStatus" id="filtroStatus">
-                    <option value="" selected>Lista de TCC em Andamento</option>
+                <select name="filtroStatus" id="filtroStatus" @if ($indicarParecerista) disabled @endif>
+                    <option value="" selected>Lista de Projetos em Andamento</option>
                     <option @if(!empty($status) && $status == "AGUARDANDO APROVACAO DO ORIENTADOR") selected @endif  value="AGUARDANDO APROVACAO DO ORIENTADOR">Aguardando aprovação do Orientador</option>
+                    <option @if((!empty($status) && $status == "AGUARDANDO AVALIACAO") || $indicarParecerista) selected @endif  value="AGUARDANDO AVALIACAO">Aguardando Avaliação</option>
                     <option @if(!empty($status) && $status == "AGUARDANDO CORRECAO DO PROJETO") selected @endif value="AGUARDANDO CORRECAO DO PROJETO">Aguardando Correção do Projeto</option>
+                    <option @if(!empty($status) && $status == "AGUARDANDO NOTA DO PROJETO") selected @endif value="AGUARDANDO NOTA DO PROJETO">Aguardando Nota do Projeto</option>
                     <option @if(!empty($status) && $status == "AGUARDANDO ARQUIVO TCC") selected @endif value="AGUARDANDO ARQUIVO TCC">Aguardando Arquivo TCC</option>
                     <option @if(!empty($status) && $status == "AGUARDANDO VALIDACAO DE BANCA") selected @endif value="AGUARDANDO VALIDACAO DE BANCA">Aguardando validação da Banca</option>
                     <option @if(!empty($status) && $status == "AGUARDANDO DEFESA") selected @endif value="AGUARDANDO DEFESA">Aguardando Defesa</option>
@@ -29,7 +30,7 @@
       @csrf
       <input type="hidden" name="id_orientador" value="{{ $id_orientador }}">
       <tr>
-        <th @if ($userLogado == "Orientador") colspan="7" @else colspan="5" @endif style="text-align:right;background:#c6c2eb;">Filtrar: <input type="text" id="filtro" name="filtro" value="{{ empty($filtro)?old('filtro'):$filtro }}" size="15" style="font-weight:bold;width:150px;border: solid 1px blue;"/></th>
+        <th @if (strpos($userLogado,"Orientador") !== false) colspan="7" @else colspan="5" @endif style="text-align:right;background:#c6c2eb;">Filtrar: <input type="text" id="filtro" name="filtro" value="{{ empty($filtro)?old('filtro'):$filtro }}" size="15" style="font-weight:bold;width:150px;border: solid 1px blue;"/></th>
       </tr>
     </form>
     <tr>
@@ -64,13 +65,15 @@
             {{ $aluno->id }} - {{ $aluno->nome }}
         @endforeach
         </td>
-        <td style="width:25%" class="tableData">{{ $objMonografia->ano }}</td>
+        <td style="width:25%" class="tableData">{{ $objMonografia->semestre }}-{{ $objMonografia->ano }}</td>
         
-        @if (empty($sistema_aberto) && $userLogado == "Orientador")
+        @if (empty($sistema_aberto[$objMonografia->id]) && strpos($userLogado,'Orientador') !== false && (strpos($_GET['route'],"orientador") !== false || strpos($_GET['route'],"buscaMonografia") !== false))
             <td style="width:6.25%" class="tableData" colspan="4"><a href="{{ route('orientador.edicao',['idMono'=>$objMonografia->id]) }}">VISUALIZAR</a> </td>
-        @elseif (empty($sistema_aberto) && $userLogado == "Avaliador")
-            <td style="width:6.25%" class="tableData"colspan="4" ><a href="{{ route('orientador.edicao',['idMono'=>$objMonografia->id]) }}">{{ ($objMonografia->status=="AGUARDANDO AVALIACAO")?'AVALIAR':'VIZUALIZAR' }}</a> </td>
-        @elseif ($userLogado == "Graduacao" || $userLogado == "Admin")
+        @elseif (empty($sistema_aberto[$objMonografia->id]) && strpos($userLogado,'Avaliador') !== false && strpos($_GET['route'],"graduacao") !== false)
+            <td style="width:6.25%" class="tableData"colspan="4" ><a href="{{ route('graduacao.edicao',['idMono'=>$objMonografia->id]) }}">{{ ($objMonografia->status=="AGUARDANDO AVALIACAO")?'AVALIAR':'VIZUALIZAR' }}</a> </td>
+        @elseif (empty($sistema_aberto[$objMonografia->id]) && strpos($userLogado,'Comissao') !== false && strpos($_GET['route'],"comissao") !== false)
+            <td style="width:6.25%" class="tableData"colspan="4" ><a href="{{ route('graduacao.edicao',['idMono'=>$objMonografia->id]) }}">VIZUALIZAR</a> </td>
+        @elseif (strpos($userLogado,"Graduacao") !== false || strpos($userLogado,"Admin") !== false)
             <td style="width:12.5%" class="tableData"><a href="{{ route('orientador.edicao',['idMono'=>$objMonografia->id ]) }}">VISUALIZAR/EDITAR</a></td> 
             <td style="width:12.5%" class="tableData">
             <form id="deleteMonografia_{{ $objMonografia->id }}" action={{ route('graduacao.excluirMonografia', ['id'=>$objMonografia->id])}} method="post"> 
@@ -80,7 +83,7 @@
             </form>
             </td> 
         @else
-        <td style="width:6.25%" class="tableData" colspan="4">{{ $sistema_aberto }}</td>
+        <td style="width:6.25%" class="tableData" colspan="4">{{ isset($sistema_aberto[$objMonografia->id])?$sistema_aberto[$objMonografia->id]:null }}</td>
         @endif
         </td>
     </tr>
@@ -89,15 +92,19 @@
     @endphp
 @endforeach
 </table>
-@if (empty($filtro))
     {{ $dadosMonografias->links() }}
-@endif
+
 <script>
     $( document ).ready(function(){
 
-        $("#filtro").keyup(function() {
-            if ($(this).val().length > 3) {
-                document.getElementById("filtrarMonografia").submit();
+        $("#filtro").keypress(function( event ) {
+            if (event.which == 13) {
+                if ($(this).val().length >= 3) {
+                    document.getElementById("filtrarMonografia").submit();
+                } else {
+                    alert("O termo a ser localizado deve conter 3 ou mais caracteres.");
+				    return false;
+                }
             }
         });
 

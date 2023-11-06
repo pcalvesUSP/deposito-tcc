@@ -19,6 +19,7 @@ class CreateDefesasTable extends Migration
             $table->dateTime('dataDefesa1');
             $table->dateTime('dataDefesa2');
             $table->dateTime('dataDefesa3');
+            $table->boolean('aprovacao_orientador')->nullable();
             $table->dateTime('dataEscolhida')->nullable();
             $table->unsignedBigInteger('user_data')->nullable();
             $table->timestamps();

@@ -8,12 +8,14 @@ if (!empty($dadosDefesa->first()->dataEscolhida)) {
 @endphp
 
 <div style="border: solid 1px black; padding: 5px 5px 5px 5px;">
-@if(empty($dadosDefesa->first()->dataEscolhida) && !$validacaoTcc)
-<p style="color:red">AGUARDANDO VALIDAÇÃO DE BANCA PELA GRADUAÇÃO</p>
+@if(is_null($dadosDefesa->first()->aprovacao_orientador) && !$validacaoTcc)
+<p style="color:red">AGUARDANDO VALIDAÇÃO DE BANCA PELO ORIENTADOR</p>
+@elseif (!$dadosDefesa->first()->aprovacao_orientador)
+<p style="color:red">AGUARDANDO CORREÇÃO DA BANCA PELO ALUNO</p>
 @endif
 
 <p><b>Composição da Banca</b></p>
-@if ($dadosMonografia->status == "AGUARDANDO DEFESA" && $dadosDefesa->first()->dataEscolhida <= date_create('now'))
+@if ($dadosMonografia->status == "AGUARDANDO DEFESA" && $dadosDefesa->first()->dataEscolhida <= date_create('now') && $dadosMonografia->orientadores->first()->codpes == auth()->user()->codpes)
 <form id="formValDefesa" action="{{ route('graduacao.validaDefesa') }}" method="post">
     @csrf
     <label style="background-color: #9b51e0; color:white; font-weight: bold; width: 100%; text-align: center;">Selecione abaixo as pessoas que participaram da Banca:</label>
@@ -21,7 +23,7 @@ if (!empty($dadosDefesa->first()->dataEscolhida)) {
 @endif
 @foreach($dadosBanca as $key=>$mBanca)
 <p>
-@if ($dadosMonografia->status == "AGUARDANDO DEFESA" && $dadosDefesa->first()->dataEscolhida <= date_create('now')) 
+@if ($dadosMonografia->status == "AGUARDANDO DEFESA" && $dadosDefesa->first()->dataEscolhida <= date_create('now') && $dadosMonografia->orientadores->first()->codpes == auth()->user()->codpes) 
 <input type="checkbox" id="{{ $mBanca->papel."_".$key }}" name="membro[]" value="{{ $mBanca->id }}">
 @endif
 {{ ($mBanca->papel=="MEMBRO")?$key++."º":"" }} {{$mBanca->papel}}: {{ $mBanca->nome }}
@@ -31,16 +33,34 @@ if (!empty($dadosDefesa->first()->dataEscolhida)) {
 </p>
 @endforeach
 <div style="color:red;">{{$errors->any() ? $errors->first('msg'):null}}</div>
-@if ($dadosMonografia->status == "AGUARDANDO DEFESA" && $dadosDefesa->first()->dataEscolhida <= date_create('now'))
-    <p><input type="submit" value="Validar Defesa"></p>
+@if ($dadosMonografia->status == "AGUARDANDO DEFESA" && $dadosDefesa->first()->dataEscolhida <= date_create('now') && $dadosMonografia->orientadores->first()->codpes == auth()->user()->codpes)
+    <p><input type="submit" id="validarDefesa" value="Validar Defesa"></p>
 </form>
 @endif
+
 @if (!empty($dadosDefesa->first()->dataEscolhida))
-    <p><b>Data da Defesa:</b> {{ $dadosDefesa->first()->dataEscolhida->format('d/m/Y H:i') }} </p>
+    <p><b>Data da Defesa:</b> {{ $dadosDefesa->first()->dataEscolhida->format('d/m/Y H:i') }} 
+    @if ($dadosMonografia->status == "AGUARDANDO DEFESA" && (strpos($userLogado,"Graduacao") !== false || strpos($userLogado,"Admin") !== false) && $dadosDefesa->first()->dataEscolhida > date_create('now'))
+    <input type="checkbox" value="1" id="modificaData" {{ ($errors->has('txtData') || $errors->has('txtHora'))?'checked':null }}> Modificar a data da defesa?
+    <div id="formDataBancaM" style="{{ ($errors->has('txtData') || $errors->has('txtHora'))?null:'display: none;' }}">
+        <form id="formModificaData" action="{{ route('graduacao.alteradata') }}" method="post">
+            @csrf
+            @method('PUT')
+            <input type="hidden" name="idDefesa" value="{{$dadosDefesa->first()->id}}">
+            <label>Informe uma nova data:</label>
+            <input type="text" name="txtData" value="" size="15" maxlength="10" value="{{ old('txtData') }}" style="border: solid 1px black;" placeholder="DD/MM/AAAA">
+            <input type="text" name="txtHora" value="" size="10" maxlength="5" value="{{ old('txtHora') }}" style="border: solid 1px black;" placeholder="HH:MM">
+            <input type="submit" value="Alterar Data" id="alteraData" style="display: inline">
+            <div class="erro"> {{  $errors->has('txtData') ? $errors->first('txtData'):null }} {{  $errors->has('txtHora') ? " - ".$errors->first('txtHora'):null }} </div>
+            <div id="process" title="Aguarde..."></div>
+        </form>
+    </div>
+    @endif
+    </p>
 @endif
 
-@if(empty($dadosDefesa->first()->dataEscolhida) && ($userLogado == "Graduacao" || $userLogado == "Admin") )
-<form id="formDtBanca" action="{{ route('graduacao.validaBanca') }}" method="post">
+@if($validacaoTcc && empty($dadosDefesa->first()->dataEscolhida) && (strpos($userLogado,"Graduacao") !== false || strpos($userLogado,"Admin") !== false) )
+    <form id="formDtBanca" action="{{ route('graduacao.validaBanca') }}" method="post">
         @csrf
         <input type="hidden" name="idDefesa" value="{{ $dadosDefesa->first()->id }}">
         <input type="hidden" name="monografiaId" value="{{ $dadosDefesa->first()->monografia_id }}">
@@ -68,7 +88,7 @@ if (!empty($dadosDefesa->first()->dataEscolhida)) {
         <input type="submit" name="enviar" id="validarBanca" value="Validar Banca"><br/><br/>
         <div id="process" title="Aguarde..."></div>
         </div>
-</form>
+    </form>
 @endif
 </div>
 
@@ -94,7 +114,31 @@ if (!empty($dadosDefesa->first()->dataEscolhida)) {
             }
         });
 
-        $('#validarBanca').on("click",  aguarde);
+        $('#modificaData').click(function() {
+            if ($(this).is(':checked')) {
+                $('#formDataBancaM').show();
+            } else {
+                $('#formDataBancaM').hide();
+            }
+        });
+
+        $('#validarBanca').click(function() {
+            $('body').css("background-color","rgba(0,0,0,0.1)");
+            $(this).css("display","none");
+            aguarde();
+        });
+
+        $('#alteraData').click(function() {
+            $('body').css("background-color","rgba(0,0,0,0.1)");
+            $(this).css("display","none");
+            aguarde();
+        });
+
+        $('#validarDefesa').click(function() {
+            $('body').css("background-color","rgba(0,0,0,0.1)");
+            $(this).css("display","none");
+            aguarde();
+        });
  
         $( "#process" ).dialog({
             autoOpen: false,
@@ -109,18 +153,19 @@ if (!empty($dadosDefesa->first()->dataEscolhida)) {
         });
         
         function aguarde() {
-            $.ajax({
+            $("#process").dialog("open").html("<img src='{{ asset('/vendor/laravel-usp-theme/fcf/images/aguarde.gif') }}'>");
+           
+           /*$.ajax({
                 type: 'POST',
                 url:'url.php',
                 data:{ 'id': 999999 },
                 beforeSend: function() {
                     $( "#process" ).dialog( "open" ).html("<p>Aguarde a validação e envio de e-mails para todos os Membros da Banca</p>");
-                    $('body').css("background-color","rgba(0,0,0,0.1)")
+                    //$('body').css("background-color","rgba(0,0,0,0.1)")
                 }
             }).done(function(data) {
-                $( "#process" ).html(data);
-            });
-
+                $("#process").html(data);
+            });*/
         } 
     });
 </script>

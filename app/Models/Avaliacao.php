@@ -24,7 +24,7 @@ class Avaliacao extends Model
      * Relação N:1
      */
     public function comissoes() {
-        return $this->belongsTo(Comissao::class,'comissoes_id','id','id');
+        return $this->belongsTo(Comissao::class,'comissoes_id','id','id')->withTrashed();
     }
 
     static function excluirRegistro($id) {

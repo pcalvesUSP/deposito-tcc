@@ -23,6 +23,10 @@ $( document ).ready(function(){
             $("#parecer").hide();
         }
     });
-	
+
+    $('#enviarAvaliacao').click(function () {
+        $(this).prop( "disabled", true );
+        $('#formAvaliacao').submit();
+    });	
 	
 });

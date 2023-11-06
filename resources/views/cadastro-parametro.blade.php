@@ -5,10 +5,23 @@
 <div class="erro" id="mensagem"> {{ $mensagem }}</div>
 <h1>Área Administrativa</h1>
 <p><b>Atenção: as datas são contadas à partir da meia noite do dia selecionado</b></p>
-<p>@if (!$dadosParam->isEmpty()) Ano:  {{ $dadosParam->first()->ano }} / Semestre: {{ $dadosParam->first()->semestre }} @endif </p>
 <form action="@if ($acao=="novo") {{ route('administracao.store') }} @else {{ route('administracao.update',['administracao' => $dadosParam->first()->id ]) }} @endif" method="post">
 @csrf
 @if ($acao == "atualizacao") @method('PUT') @endif
+<p>
+<select name="semestreAno" id="semestreAno">
+  @if (!$dadosParam->isEmpty())
+      <option selected value="{{$dadosParam->first()->ano."-".$dadosParam->first()->semestre}}">Ano: {{ $dadosParam->first()->ano }} / Semestre: {{ $dadosParam->first()->semestre }}</option>
+  @endif
+  @foreach ($dadosSemestre as $semestreAno)
+  @if (!$dadosParam->isEmpty() && $dadosParam->first()->ano == $semestreAno->ano && $dadosParam->first()->semestre == $semestreAno->semestre)
+  @continue
+  @else
+  <option value="{{ $semestreAno->ano."-".$semestreAno->semestre}}">Ano: {{ $semestreAno->ano }} / Semestre: {{ $semestreAno->semestre }} </option>
+  @endif
+  @endforeach
+</select>
+</p>
 <div class="campo">
 <label for="dataInicioAlunos">Data INICIAL para cadastro do projeto de todos os alunos (DD/MM/AAAA)</label><input type="text" value="@if (!$dadosParam->isEmpty()) {{ $dadosParam->first()->dataAberturaDiscente->format('d/m/Y') }} @else {{ trim(old('dataInicioAlunos')) }} @endif" name="dataInicioAlunos" id="dataInicioAlunos"/><br/>
 <div class="erro">{{  $errors->has('dataInicioAlunos') ? $errors->first('dataInicioAlunos'):null }}</div>
@@ -34,7 +47,7 @@
 <input type="submit" value="Salvar" id="salvar_parametros">
 </form>
 
-
+<script src="js/cadastroParametro.js"></script>
 <script>
     setTimeout(function() {
                 $('#mensagem').fadeOut('fast');
