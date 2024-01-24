@@ -59,7 +59,7 @@
     @endif
     @endforeach
 </table>
-{{ $listOrientadores->links() }}
+@if (!empty($orientador->nome)) {{ $listOrientadores->links() }} @endif
 
 <script>
     setTimeout(function() {

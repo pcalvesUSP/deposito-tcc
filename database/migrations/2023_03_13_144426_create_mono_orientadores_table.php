@@ -20,7 +20,7 @@ class CreateMonoOrientadoresTable extends Migration
             $table->boolean('principal')->default(false);
             $table->enum('status',['AGUARDANDO APROVACAO ORIENTADOR'
                                   ,'APROVADO'
-                                  ,'REPROVADO']);
+                                  ,'REPROVADO'])->default('AGUARDANDO APROVACAO ORIENTADOR');
             $table->timestamps();
             
             $table->foreign('orientadores_id')->references('id')->on('orientadores');

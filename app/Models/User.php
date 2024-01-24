@@ -170,14 +170,14 @@ class User extends Authenticatable
                     $arrayGerentes = explode(',',env('SENHAUNICA_GERENTES'));
                     $arrayAdmins = explode(',',env('SENHAUNICA_ADMINS'));
 
-                    if (array_search(auth()->user()->codpes,$arrayAdmins) !== false ) 
+                    /*if ($this->isManagedByEnv()) 
                     {
                             if (!auth()->user()->hasPermissionTo('userAdmin'))
                                 auth()->user()->givePermissionTo('userAdmin');
 
                             if (!auth()->user()->hasPermissionTo('admin','senhaunica'))
                                 auth()->user()->givePermissionTo('admin');
-                    }
+                    }*/
 
                     if (array_search(auth()->user()->codpes,$arrayGerentes) !== false ) {
                         

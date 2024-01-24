@@ -4,7 +4,9 @@
 /public/declaracao_banca/
 /storage/*.key
 /vendor
+/routes/web-producao.php
 .env
+.env-producao
 .phpunit.result.cache
 Homestead.json
 Homestead.yaml

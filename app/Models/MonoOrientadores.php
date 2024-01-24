@@ -20,7 +20,7 @@ class MonoOrientadores extends Model
     }
 
     public function orientadores() {
-        return $this->hasMany(Orientador::class,'id','orientadores_id');
+        return $this->hasMany(Orientador::class,'id','orientadores_id')->withTrashed();
     }
 
     public function monografias() {

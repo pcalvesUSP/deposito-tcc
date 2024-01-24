@@ -11,11 +11,13 @@ O Login é realizado através da senha única.</p>
 <p>Orientador (todos os docentes cadastrados como orientadores neste sistema)<br/>
 <ul>
     <li>Aprova ou Reprova Monografia para ser mandada para membro da Comissão (Avaliador)</li>
+    <li>Informa a nota do projeto e da apresentação do TCC</li>
+    <li>Aprova ou Reprova Banca, que deve ser corrigida pelo aluno, se for o caso</li>
 </ul>
 </p>
 <p>Avaliador (todos os docentes cadastrados como membros da Comissão neste sistema)<br/>
 <ul>
-    <li>Avalia e corrige a Monografia</li>
+    <li>Avalia a monografia e solicita correções para o aluno, se for o caso</li>
     <li>Aprova as correções</li>
 </ul>
 </p>
@@ -51,7 +53,7 @@ Laravel 8.83, PHP 8.1.24
 <p>No diretório onde consta o projeto, rodar o seguinte comando (AMBIENTE DEV):</p>
 
 ```
-composer install --ignore-platform-reqs
+composer install --ignore-platform-req=zip
 php artisan migrate
 php artisan key:generate
 

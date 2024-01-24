@@ -4,7 +4,6 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\File;
-use Illuminate\Support\Facades\Mail;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Redirect;
@@ -25,12 +24,13 @@ use App\Models\Banca;
 use App\Models\Nota;
 
 use Uspdev\Replicado\Pessoa;
+use Uspdev\Replicado\Graduacao;
 
 use App\Rules\CountWord1000;
 use App\Rules\VerificaDatas;
 
-use App\Mail\NotificacaoOrientador;
-use App\Mail\NotificacaoAluno;
+use App\Jobs\EnviarEmailOrientador;
+use App\Jobs\EnviarEmailAluno;
 
 class MonografiaController extends Controller
 {    
@@ -87,7 +87,6 @@ class MonografiaController extends Controller
         $userLogado = null;
         $modificaParametro = 0;
         $aprovaBanca = 0;
-        
         
         if (auth()->user()->hasRole('aluno')) {
             $userLogado.= "Aluno";
@@ -338,19 +337,7 @@ class MonografiaController extends Controller
                         $avaliar = 1;
                     } else {
                         $avaliar = 0;
-                    }
-                    /*$maxDtAvaliacao = Avaliacao::where("monografia_id",$dadosMonografia->id)
-                                               ->whereIn("status",["CORRIGIDO","AGUARDANDO"])
-                                               ->whereRelation("comissoes","codpes",auth()->user()->codpes)
-                                               ->get()
-                                               ->max("dataAvaliacao");
-
-                    $dadosAvaliacoes = Avaliacao::where("monografia_id",$dadosMonografia->id)
-                                                ->whereIn("status",["CORRIGIDO","AGUARDANDO"])
-                                                ->where("dataAvaliacao",$maxDtAvaliacao)
-                                                ->whereRelation("comissoes","codpes",auth()->user()->codpes)
-                                                ->get();*/
-                    
+                    }                    
                     
                 } elseif (auth()->user()->hasRole("aluno") && $dadosAvaliacoes->first()->status == "DEVOLVIDO") {
                     $readonly = 0;
@@ -365,7 +352,10 @@ class MonografiaController extends Controller
             
             if (!$dadosAvaliacoes->isEmpty()) {
                 $aprovadoOrientador = 1;
-                $avParecerista = Comissao::find($dadosAvaliacoes->first()->comissoes_id);
+                $avParecerista = Comissao::where('id',$dadosAvaliacoes->first()->comissoes_id)
+                                        ->withTrashed()
+                                        ->get();
+                $avParecerista = $avParecerista->first();
                 $dadosAvaliacoes->first()->dataAvaliacao = date_create($dadosAvaliacoes->first()->dataAvaliacao);
                 $dadosAvaliacoes->_parecerista = $avParecerista->codpes." ".$avParecerista->nome;
                 $idParecerista = $avParecerista->id;
@@ -387,7 +377,11 @@ class MonografiaController extends Controller
         } 
         
         $listaAlunosDupla = Aluno::getDadosAluno();
-        $listaOrientadores = Orientador::where('aprovado', 1)->orderBy('nome')->get();
+        if ($readonly) {
+            $listaOrientadores = Orientador::where('aprovado', 1)->orderBy('nome')->withTrashed()->get();
+        } else {
+            $listaOrientadores = Orientador::where('aprovado', 1)->orderBy('nome')->get();
+        }
         
         $parametros = ["numUSPAluno"        => $numUSPAluno
                       ,"nomeAluno"          => $nomeAluno
@@ -461,7 +455,7 @@ class MonografiaController extends Controller
         $rules['curriculo']         = "required";
         $rules['titulo']            = ["required","min:3","max:255"];
         $rules['resumo']            = ["required","min:3",new CountWord1000];
-        $rules['introducao']        = ["required","min:3",new CountWord1000];
+        $rules['introducao']        = ["required","min:3","max:65000"];
         $rules['objetivo']          = ["required","min:3",new CountWord1000];
         $rules['material_metodo']   = ["required","min:3",new CountWord1000];
         $rules['resultado_esperado']= ["required","min:3",new CountWord1000];
@@ -472,9 +466,6 @@ class MonografiaController extends Controller
             $rules['unitermo2']     = ["required", "exists:unitermos,id"];
         if (!$request->filled('txtUnitermo3'))
             $rules['unitermo3']     = ["required", "exists:unitermos,id"];
-        //$rules['unitermo4']         = ["exists:unitermos,id"];
-        //$rules['unitermo5']         = ["exists:unitermos,id"];
-        //$rules['template_apres']   = ["file","required"];
         $rules['cod_area_tematica'] = ["required", "exists:areastematicas,id"];
         
         $messages['required']                 = "Favor informar o :attribute da monografia.";
@@ -502,12 +493,21 @@ class MonografiaController extends Controller
 
             $dadosParam = Parametro::getDadosParam();
 
+            $dadosCurso = Graduacao::obterCursoAtivo(auth()->user()->codpes);
+            //Array (codpes, nompes, codcur, nomcur, codhab, nomhab, dtainivin, codcurgrd)
+
+            if ($dadosCurso['codcurgrd'] != $request->input('curriculo')) {
+                return Redirect::back()
+                                ->withInput()
+                                ->withErrors(['curruculo'=>'O código do currículo cadastrado não bate com o Jupiter. Favor verificar.']);
+            }
+
             $monografia = new Monografia();
             $monografia->status            = 'AGUARDANDO APROVACAO ORIENTADOR';
             $monografia->titulo            = $request->input('titulo');
             $monografia->resumo            = $request->input('resumo');
             $monografia->introducao        = $request->input('introducao');
-            $monografia->curriculo         = $request->input('curriculo');
+            $monografia->curriculo         = $dadosCurso['codcurgrd'];
             $monografia->objetivo          = $request->input('objetivo');
             $monografia->material_metodo   = $request->input('material_metodo');
             $monografia->resultado_esperado= $request->input('resultado_esperado');
@@ -566,6 +566,7 @@ class MonografiaController extends Controller
                 $mono_orientador->orientadores_id = $orientador->id;
                 $mono_orientador->monografia_id = $monografia->id;
                 $mono_orientador->principal = 0;
+                $mono_orientador->status = 'AGUARDANDO APROVACAO ORIENTADOR';
                 
                 if ($key==0)
                     $mono_orientador->principal = 1;
@@ -612,10 +613,14 @@ class MonografiaController extends Controller
                    (!isset($unitermo4->unitermo) && !isset($unitermo5->unitermo))) {
                     $unitermo1->monografia()->save($monografia);
                 } else {
-                    return Redirect::back()->withErrors(['unitermo1'=>'O campo Palavra-chave 1 não pode ser repetido']);
+                    return Redirect::back()
+                                    ->withInput()
+                                    ->withErrors(['unitermo1'=>'O campo Palavra-chave 1 não pode ser repetido']);
                 } 
             } else {
-                return Redirect::back()->withErrors(['unitermo1'=>'O campo Palavra-chave 1 não pode ser repetido']);
+                return Redirect::back()
+                                ->withInput()
+                                ->withErrors(['unitermo1'=>'O campo Palavra-chave 1 não pode ser repetido']);
             }
             if ($unitermo2->unitermo <> $unitermo1->unitermo &&
                 $unitermo2->unitermo <> $unitermo3->unitermo  
@@ -625,7 +630,9 @@ class MonografiaController extends Controller
                    (!isset($unitermo4->unitermo) && !isset($unitermo5->unitermo))) {
                     $unitermo2->monografia()->save($monografia);
                 } else {
-                    return Redirect::back()->withErrors(['unitermo2'=>'O campo Palavra-chave 2 não pode ser repetido']);
+                    return Redirect::back()
+                                    ->withInput()
+                                    ->withErrors(['unitermo2'=>'O campo Palavra-chave 2 não pode ser repetido']);
                 }
                  
             } else {
@@ -639,7 +646,9 @@ class MonografiaController extends Controller
                    (!isset($unitermo4->unitermo) && !isset($unitermo5->unitermo))) {
                     $unitermo3->monografia()->save($monografia);
                 } else {
-                    return Redirect::back()->withErrors(['unitermo3'=>'O campo Palavra-chave 3 não pode ser repetido']);
+                    return Redirect::back()
+                                    ->withInput()
+                                    ->withErrors(['unitermo3'=>'O campo Palavra-chave 3 não pode ser repetido']);
                 }
             } else {
                 return Redirect::back()->withErrors(['unitermo3'=>'O campo Palavra-chave 3 não pode ser repetido']);
@@ -679,6 +688,7 @@ class MonografiaController extends Controller
             $textoOrientador.= "Caso seja necessária alguma alteração, acesse o campo, altere e envie para a CTCC.         
             ";
 
+            //Essa parte precisa ser descomentada caso haja mais de um orientador
             /*if (count($orientadores) > 1) {
                 $textoOrientador.= "Segue a lista de Orientadores:                                                                   
                 ";
@@ -694,16 +704,18 @@ class MonografiaController extends Controller
 
             foreach ($orientadores as $key=>$orientador) {
                 $body = str_replace("[NOMEORIENTADOR]",$orientador->nome,$textoOrientador);
+                //Essa parte precisa ser descomentada caso haja mais de um orientador
                 /*if ($key == 0 && count($orientadores) > 1) {
                     $body.="
                     ";
                     $body.="**Você é o Orientador Principal.**                                                                   
                     ";
                 }*/
-                /*Mail::to("pcalves@usp.br", $orientador->nome)
-                    ->send(new NotificacaoOrientador($body,"ORIENTADOR - Novo Projeto Cadastrado",$orientador->nome));*/
-                Mail::to($orientador->email, $orientador->nome)
-                    ->send(new NotificacaoOrientador($body,"ORIENTADOR - Novo Projeto Cadastrado",$orientador->nome));
+                EnviarEmailOrientador::dispatch(['email'         => $orientador->email
+                                                ,'textoMsg'     => $body
+                                                ,'assuntoMsg'   => "ORIENTADOR - Novo Projeto Cadastrado"
+                                                ,'nome'         => $orientador->nome 
+                                                ]);
             }
 
             //Envio e-mail para o aluno
@@ -711,12 +723,10 @@ class MonografiaController extends Controller
             no sistema em ".$dataAtual->format('d/m/Y H:i:s')." e enviado para o seu orientador.
             ";
 
-            $emailAluno = Pessoa::emailusp($aluno->id);
-
-            /*Mail::to("pcalves@usp.br", $aluno->nome)
-                    ->send(new NotificacaoAluno($txtMsgAluno,$aluno->nome,"Confirmação de inclusão de Projeto de Conclusão de Curso"));*/
-            Mail::to($emailAluno, $aluno->nome)
-                ->send(new NotificacaoAluno($txtMsgAluno,$aluno->nome,"Confirmação de inclusão de Projeto de Conclusão de Curso"));
+            EnviarEmailAluno::dispatch(['email'     => Pessoa::emailusp($aluno->id)
+                                        ,'textoMsg' => $txtMsgAluno
+                                        ,'nome'     => $aluno->nome
+                                        ,'assunto'  => "Confirmação de inclusão de Projeto de Conclusão de Curso"]);
 
             $mensagem = "Monografia cadastrada";
 
@@ -786,7 +796,7 @@ class MonografiaController extends Controller
         $rules['curriculo']         = "required";
         $rules['titulo']            = ["required","min:3","max:255"];
         $rules['resumo']            = ["required","min:3",new CountWord1000];
-        $rules['introducao']        = ["required","min:3",new CountWord1000];
+        $rules['introducao']        = ["required","min:3","max:65000"];
         $rules['objetivo']          = ["required","min:3",new CountWord1000];
         $rules['material_metodo']   = ["required","min:3",new CountWord1000];
         $rules['resultado_esperado']= ["required","min:3",new CountWord1000];
@@ -1010,14 +1020,15 @@ class MonografiaController extends Controller
                 ";
                 $textoMensagem.= "Entre no sistema para re-avaliar o projeto de TCC.                               
                 ";
-                $assuntoMsg = "TCC com título ".$objMonografia->titulo." corrigida";
+                $assuntoMsg = "TCC do aluno ".auth()->user()->name." corrigida";
 
                 $comissao = Comissao::find($dadosAvaliacao->comissoes_id);
 
-                /*Mail::to("pcalves@usp.br", $comissao->nome)
-                    ->send(new NotificacaoOrientador($textoMensagem, $assuntoMsg, $comissao->nome));*/
-                Mail::to($comissao->email, $comissao->nome)
-                      ->send(new NotificacaoOrientador($textoMensagem, $assuntoMsg, $comissao->nome));
+                EnviarEmailOrientador::dispatch(['email'        => $comissao->email
+                                                ,'textoMsg'     => $textoMensagem
+                                                ,'assuntoMsg'   => $assuntoMsg
+                                                ,'nome'         => $comissao->nome 
+                                                ]);
 
                 foreach($objMonografia->orientadores()->get() as $orientadores) {
                     $textoMensagem = "O projeto de TCC título **".$objMonografia->titulo."** foi corrigida pelo aluno.           
@@ -1028,12 +1039,13 @@ class MonografiaController extends Controller
                     ";
                     $textoMensagem.= "Não é necessária nenhuma ação no sistema, somente para ciência.                               
                     ";
-                    $assuntoMsg = "TCC com título ".$objMonografia->titulo." corrigida pelo aluno.";
+                    $assuntoMsg = "TCC do aluno ".auth()->user()->name." corrigida";
                     
-                    /*Mail::to("pcalves@usp.br", $orientadores->nome)
-                        ->send(new NotificacaoOrientador($textoMensagem, $assuntoMsg, $orientadores->nome));*/
-                    Mail::to($objOrientador->email, $orientadores->nome)
-                        ->send(new NotificacaoOrientador($textoMensagem, $assuntoMsg, $orientadores->nome));
+                    EnviarEmailOrientador::dispatch(['email'        => $orientadores->email
+                                                    ,'textoMsg'     => $textoMensagem
+                                                    ,'assuntoMsg'   => $assuntoMsg
+                                                    ,'nome'         => $orientadores->nome 
+                                                    ]);
                 }
                 
             } else {
@@ -1146,43 +1158,8 @@ class MonografiaController extends Controller
             } else {
                 if (empty($status)) {
                     $Monografias = $ObjMonografias->getMonografiaByFiltro($filtro,0,$id_orientador); 
-
-                    /*$Monografias = Monografia::with(['alunos','orientadores'])
-                                             
-                                             ->whereOr('alunos',function (Builder $query) {
-                                                $query->where('nome','like',"%$filtro%");
-                                             })
-                                             ->whereRelation('alunos','nome','like',"%$filtro%")
-                                             ->whereOr('titulo','like',"%$filtro%")
-                                             ->whereOr('ano','like',"%$filtro%")
-                                             ->whereOr('status','<>','CONCLUÍDO')
-                                             //->whereRelation('orientadores', 'orientadores_id', $id_orientador)
-                                             ->orderBy('ano','desc')
-                                             ->orderBy('semestre')
-                                             ->get();*/
                 } else {
                     $Monografias = $ObjMonografias->getMonografiaByFiltro($filtro,0,$id_orientador,$status);
-                    /*$Monografias = Monografia::with(['alunos','orientadores'])
-                                             ->where('status',$status)
-                                             ->whereOr('alunos',function (Builder $query) {
-                                                $query->where('nome','like',"%$filtro%");
-                                             })
-                                             //->whereRelation('alunos','nome','like',"%$filtro%")
-                                             ->whereOr('titulo','like',"%$filtro%")
-                                             ->whereOr('ano','like',"%$filtro%")
-                                             //->whereRelation('orientadores', 'orientadores_id', $id_orientador)
-                                             ->orderBy('ano','desc')
-                                             ->orderBy('semestre')
-                                             ->get();
-                    /*$Monografias = Monografia::with(['alunos','orientadores'])
-                                             ->where('status',$status)
-                                             ->whereRelation('orientadores', 'orientadores_id', $id_orientador)
-                                             ->whereRelation('alunos','nome','like',"%$filtro%")
-                                             ->whereOr('titulo','like',"%$filtro%")
-                                             ->whereOr('ano','like',"%$filtro%")
-                                             ->orderBy('ano','desc')
-                                             ->orderBy('semestre')
-                                             ->get();*/
                 }
                 
             }
@@ -1394,10 +1371,10 @@ class MonografiaController extends Controller
             $txtEmailComissao.= "Encaminhe para avaliação, indicando um parecerista no Sistema                                                      
             ";
 
-            /*Mail::to("pcalves@usp.br","Comissão de TCC")
-                    ->send(new NotificacaoAluno($txtEmailComissao,"Comissão de TCC"));*/
-            Mail::to("ctcc.fcf@usp.br", "Comissão de TCC")
-                    ->send(new NotificacaoAluno($txtEmailComissao,"Comissão de TCC"));
+            EnviarEmailAluno::dispatch(['email'     => "ctcc.fcf@usp.br"
+                                        ,'textoMsg' => $txtEmailComissao
+                                        ,'nome'     => "Comissão de TCC"
+                                        ,'assunto'  => "Projeto aprovado pelo Orientador"]);
         }
 
         return redirect()->route('orientador.edicao',['idMono'=>$monografia->id]);
@@ -1443,13 +1420,17 @@ class MonografiaController extends Controller
             ";
             $txtMsg.= "**Título:** ".$monografia->titulo."                                       
             ";
-            $txtMsg.= "**Você tem o prazo de 3 dias úteis.**                          
+            $txtMsg.= "**Você tem o prazo de 5 dias úteis para dar seu parecer.**                          
+            ";
+            $txtMsg.= "**Agradecemos, antecipadamente, sua colaboração.**                          
             ";
 
-            /*Mail::to("pcalves@usp.br", $comissao->nome)
-                ->send(new NotificacaoOrientador($txtMsg, $assunto, $comissao->nome));*/
-            Mail::to($comissao->email, $comissao->nome)
-                    ->send(new NotificacaoOrientador($txtMsg, $assunto, $comissao->nome));
+            EnviarEmailOrientador::dispatch(['email'        => $comissao->email
+                                            ,'textoMsg'     => $txtMsg
+                                            ,'assuntoMsg'   => $assunto
+                                            ,'nome'         => $comissao->nome 
+                                            ]);
+
         } else {
             $msg = "O Projeto ainda não foi aprovado pelo Orientador.";
         }
@@ -1513,21 +1494,22 @@ class MonografiaController extends Controller
             $textoMensagem.= "http://www.fcf.usp.br/graduacao/subpagina.php?menu=51&subpagina=351             
             ";
 
-            $banca = Banca::where('monografia_id',$monografia->id)->get();
+            $banca = Banca::select('nome','email')->distinct()->where('monografia_id',$monografia->id)->get();
             $arquivoTcc = public_path()."/upload/".$monografia->path_arq_tcc;
 
             foreach ($banca as $membro) {
-                /*Mail::to("pcalves@usp.br", $membro->nome)
-                    ->send(new NotificacaoOrientador($textoMensagem, $assunto, $membro->nome, $arquivoTcc));*/
-                Mail::to($membro->email, $membro->nome)
-                      ->send(new NotificacaoOrientador($textoMensagem, $assunto, $membro->nome, $arquivoTcc));
+                EnviarEmailOrientador::dispatch(['email'        => $membro->email
+                                                ,'textoMsg'     => $textoMensagem
+                                                ,'assuntoMsg'   => $assunto
+                                                ,'nome'         => $membro->nome 
+                                                ,'attach'       => $arquivoTcc
+                                                ]);
             }  
 
-            $emailAluno = Pessoa::emailusp($aluno->first()->id);
-            /*Mail::to("pcalves@usp.br", $aluno->first()->nome)
-                    ->send(new NotificacaoOrientador($textoMensagem, $assunto, $aluno->first()->nome,"Defesa Agendadada"));*/
-            Mail::to($emailAluno, $aluno->first()->nome)
-                  ->send(new NotificacaoOrientador($textoMensagem, $assunto, $aluno->first()->nome,"Defesa Agendada"));
+            EnviarEmailAluno::dispatch(['email'     => Pessoa::emailusp($aluno->first()->id)
+                                        ,'textoMsg' => $textoMensagem
+                                        ,'nome'     => $aluno->first()->nome
+                                        ,'assunto'  => "Defesa Agendada"]);
     
             print "<script> alert('Defesa validadada com Sucesso'); </script>";
         } else {
@@ -1590,10 +1572,14 @@ class MonografiaController extends Controller
             $arquivoTcc = public_path()."/upload/".$monografia->path_arq_tcc;
 
             foreach ($banca as $membro) {
-                /*Mail::to("pcalves@usp.br", $membro->nome)
-                    ->send(new NotificacaoOrientador($textoMensagem, $assunto, $membro->nome, $arquivoTcc));*/
-                Mail::to($membro->email, $membro->nome)
-                      ->send(new NotificacaoOrientador($textoMensagem, $assunto, $membro->nome, $arquivoTcc));
+                EnviarEmailOrientador::dispatch(['email'        => $membro->email
+                                                ,'textoMsg'     => $textoMensagem
+                                                ,'assuntoMsg'   => $assunto
+                                                ,'nome'         => $membro->nome 
+                                                ,'attach'       => $arquivoTcc
+                                                ]);
+                
+                
             }  
     
             print "<script> alert('Defesa validadada com Sucesso'); </script>";

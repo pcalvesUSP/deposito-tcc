@@ -5,8 +5,6 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
-use Illuminate\Support\Facades\Mail;
-use App\Mail\NotificacaoOrientador;
 
 use App\Models\Aluno;
 use App\Models\Parametro;
@@ -14,6 +12,8 @@ use App\Models\Defesa;
 use App\Models\Banca;
 use App\Models\Monografia;
 use App\Models\Orientador;
+
+use App\Jobs\EnviarEmailOrientador;
 
 use Uspdev\Replicado\Pessoa;
 
@@ -262,7 +262,7 @@ class AlunoController extends Controller
 
            $assunto = "Você acaba de receber uma banca para ciência e aprovação.";
 
-           $txtMensagem = "Você acaba de receber uma banca para ciência e aprovação referente ao projeto abaixo:               
+           $txtMensagem = "Você recebeu a indicação da Comissão Julgadora do Trabalho de Conclusão de Curso abaixo:               
            ";
            $txtMensagem.= "**Alun@:** ".$aluno->first()->nome."                                     
            ";
@@ -270,13 +270,16 @@ class AlunoController extends Controller
            ";
            $txtMensagem.= "**Título:** ".$monografia->titulo."                                       
            ";
+           $txtMensagem.= "**Acesse o sistema, coloque o seu DE ACORDO e encaminhe para a CTCC**     
+           ";
            $txtMensagem.= "**Você tem o prazo de 3 dias úteis.**                          
            ";
 
-           /*Mail::to("pcalves@usp.br", $orientador->first()->nome)
-                    ->send(new NotificacaoOrientador($txtMensagem, $assunto, $orientador->first()->nome));*/
-           Mail::to($orientador->first()->email, $orientador->first()->nome)
-                    ->send(new NotificacaoOrientador($txtMensagem, $assunto, $orientador->first()->nome));
+           EnviarEmailOrientador::dispatch(['email'         => $orientador->first()->email
+                                            ,'textoMsg'     => $txtMensagem
+                                            ,'assuntoMsg'   => $assunto
+                                            ,'nome'         => $orientador->first()->nome 
+                                            ]);
 
            $mensagem = "Defesa indicada, aguarde validação do Orientador";
         } else {
@@ -411,12 +414,14 @@ class AlunoController extends Controller
            $txtMensagem.= "**Você tem o prazo de 3 dias úteis.**                          
            ";
 
-           /*Mail::to("pcalves@usp.br", $monografia->orientadores->first()->nome)
-                    ->send(new NotificacaoOrientador($txtMensagem, $assunto, $monografia->orientadores->first()->nome));*/
-           Mail::to($monografia->orientadores->first()->email, $monografia->orientadores->first()->nome)
-                    ->send(new NotificacaoOrientador($txtMensagem, $assunto, $monografia->orientadores->first()->nome));
+           EnviarEmailOrientador::dispatch(['email'         => $monografia->orientadores->first()->email
+                                            ,'textoMsg'     => $txtMensagem
+                                            ,'assuntoMsg'   => $assunto
+                                            ,'nome'         => $monografia->orientadores->first()->nome 
+                                            ]);
 
            $mensagem = "Defesa corrigida, aguarde validação do Orientador";
+           
         } else {
             $mensagem = "Erro no cadastro da Defesa";
         }

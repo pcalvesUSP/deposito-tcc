@@ -14,13 +14,13 @@ use App\Models\Monografia;
 use App\Models\Aluno;
 use App\Models\Defesa;
 
-use Illuminate\Support\Facades\Mail;
-use App\Mail\NotificacaoOrientador;
-
 use Uspdev\Replicado\Pessoa;
 
 use App\Rules\verificaBanca;
 use App\Rules\VerificaDatas;
+
+use App\Jobs\EnviarEmailOrientador;
+use App\Jobs\EnviarEmailAluno;
 
 class ComissaoController extends Controller
 {
@@ -106,7 +106,7 @@ class ComissaoController extends Controller
                 $comissaoId = $objComissao->id;
             }
         } else {
-            $objComissao = $comissaoDel->first();
+            $objComissao = $comissaoDel->first()->restore();
             $comissaoId = $objComissao->id;
         }
         
@@ -120,14 +120,10 @@ class ComissaoController extends Controller
                                     ->where('papel','COORDENADOR')
                                     ->where('id','<>',$comissaoId);
         }
-        if ($coordenador->count() > 0) {
+        if ($coordenador->count() > 0 && $request->input('papelComissao') == 'COORDENADOR') {
             return Redirect::back()
                         ->withErrors(['papelComissao'=>'Já existe um coordenador cadastrado, não é permitido haver dois.'])
                         ->withInput();
-        }
-
-        if ($objComissao->isTrashed()) {
-            $objComissao->restore();
         }
 
         $objComissao->codpes            = $request->input('nuspComissao');
@@ -352,7 +348,13 @@ class ComissaoController extends Controller
                             ->where('dtInicioMandato','<=', date_create('now')->format('Y-m-d'))
                             ->where('dtFimMandato', '>=', date_create('now')->format('Y-m-d'))
                             ->get();
-
+        
+        if (!$comissao->isEmpty() && is_null($comissao->first()->assinatura)) {
+            return Redirect::back()
+                        ->withErrors(['msg' => 'A Coordenadora da Comissão de TCC não tem uma assinatura cadastrada. Favor entrar em contato com o Serviço de Graduação.'])
+                        ->withInput();
+        }
+        
         $dataDefesa = date_create($defesa->first()->dataEscolhida);
 
         foreach ($request->input('membro') as $key=>$membro) {
@@ -369,9 +371,9 @@ class ComissaoController extends Controller
                         ];
             
             $nomeArq = "declaracao_defesa_".$membro."-".date('Y').".pdf";
-
+            
             $declaracao = Pdf::loadView('templates_pdf.declaracao-defesa-banca', $paramPdf);
-            $declaracao->save(public_path()."/declaracao_banca/".$nomeArq);
+            $declaracao->save(public_path().'/declaracao_banca/'.$nomeArq);
 
             $membroBanca->arquivo_declaracao = $nomeArq;
             $membroBanca->update();
@@ -383,24 +385,27 @@ class ComissaoController extends Controller
             $body = str_replace("[NOME_ALUNO]",$aluno->first()->nome,$body);
             $body = str_replace("[TITULO]",$monografia->titulo,$body);
             
-            /*Mail::to("pcalves@usp.br", $membroBanca->nome)
-                    ->send(new NotificacaoOrientador($body, "Certificado de participação em Banca TCC ".$monografia->titulo, $membroBanca->nome, public_path()."/declaracao_banca/".$nomeArq));*/
-            Mail::to($membroBanca->email, $membroBanca->nome)
-                  ->send(new NotificacaoOrientador($body, "Certificado de participação em Banca TCC ".$monografia->titulo, $membroBanca->nome, public_path()."/declaracao_banca/".$nomeArq));
+            EnviarEmailOrientador::dispatch(['email'        => $membroBanca->email
+                                            ,'textoMsg'     => $body
+                                            ,'assuntoMsg'   => "Certificado de participação em Banca TCC ".$monografia->titulo
+                                            ,'nome'         => $membroBanca->nome 
+                                            ,'attach'       => public_path()."/declaracao_banca/".$nomeArq
+                                            ]);
 
         }
 
         $txtMensagem = "A defesa do TCC projeto **".$monografia->titulo."** occoreu em *".$paramPdf['data_defesa']." às ".$paramPdf['hora_defesa']."*              
         ";
-        $txtMensagem.= "É preciso informar a nota do TCC no sistema.                                                                                              
+        $txtMensagem.= "É preciso informar a média final do TCC no sistema.                                                                                              
         ";
         $txtMensagem.= "**Você tem 3 dias úteis para informar**                                                                                                   
         ";
         foreach($monografia->orientadores()->get() as $orientador) {
-             /*Mail::to("pcalves@usp.br", $orientador->nome)
-                 ->send(new NotificacaoOrientador($txtMensagem, "Existem notas a serem informadas para o TCC ".$monografia->titulo, $orientador->nome));*/
-             Mail::to($orientador->email, $orientador->nome)
-                 ->send(new NotificacaoOrientador($txtMensagem, "Existem notas a serem informadas para o TCC ".$monografia->titulo, $orientador->nome));
+            EnviarEmailOrientador::dispatch(['email'        => $orientador->email
+                                            ,'textoMsg'     => $txtMensagem
+                                            ,'assuntoMsg'   => "Existem notas a serem informadas para o TCC do aluno ".$monografia->alunos->first()->nome
+                                            ,'nome'         => $orientador->nome
+                                            ]);
         }
         
         return Redirect::back();

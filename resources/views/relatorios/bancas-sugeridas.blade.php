@@ -33,6 +33,7 @@
         <td style="width:9.09%;" class="tableData">{{ $monografia->orientadores->first()->email}}</td>
         <td style="width:9.09%;" class="tableData">{{ $monografia->orientadores->first()->instituicao_vinculo}}</td>
         <td style="width:12.09%;" class="tableData">
+            @unless($monografia->bancas->isEmpty())
             <table class="table table-borderless">
                 <tr>
                     <th>Papel</th>
@@ -52,12 +53,22 @@
                     </tr>
                 @endforeach
             </table>
+            @else
+            Banca não cadastrada
+            @endunless
         </td>
         <td style="width:9.09%; font-size=8px;" class="tableData">{{ $monografia->titulo }}</td>
         <td style="width:12.09%; font-size=8px;" class="tableData">
-        Data 1: {{ date_create($monografia->defesas->first()->dataDefesa1)->format('d/m/Y H:i') }}<br/>
-        Data 2: {{ date_create($monografia->defesas->first()->dataDefesa2)->format('d/m/Y H:i') }}<br/>
-        Data 3: {{ date_create($monografia->defesas->first()->dataDefesa3)->format('d/m/Y H:i') }}
+        @unless(empty($monografia->defesas->first()->dataDefesa1))
+        Data 1: {{  !empty($monografia->defesas->first()->dataDefesa1)?date_create($monografia->defesas->first()->dataDefesa1)->format('d/m/Y H:i'):""  }}<br/>
+        Data 2: {{  !empty($monografia->defesas->first()->dataDefesa2)?date_create($monografia->defesas->first()->dataDefesa2)->format('d/m/Y H:i'):"" }}<br/>
+        Data 3: {{  !empty($monografia->defesas->first()->dataDefesa3)?date_create($monografia->defesas->first()->dataDefesa3)->format('d/m/Y H:i'):"" }}
+        @unless(empty($monografia->defesas->first()->dataEscolhida))
+        <p style="color: red;">BANCA MARCADA PARA: {{  date_create($monografia->defesas->first()->dataEscolhida)->format('d/m/Y H:i') }}</p>
+        @endunless
+        @else
+        Banca não cadastrada
+        @endunless
         </td>
     </tr>
     @else

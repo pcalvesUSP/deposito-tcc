@@ -26,7 +26,8 @@ class SeedOrientadoresTable extends Migration
             if (count($setores)) {
                 $instituicao = "Faculdade de Ciências Farmacêuticas - ".$setores[2];
             }
-            DB::table('orientadores')->insertOrIgnore([
+            //DB::table('orientadores')->insertOrIgnore([ //mysql
+            DB::table('orientadores')->insert([ //sqlserver
                 'codpes'             => $orientador['codpes'],
                 'nome'               => $orientador['nompes'],
                 'email'              => Pessoa::emailusp($orientador['codpes']),

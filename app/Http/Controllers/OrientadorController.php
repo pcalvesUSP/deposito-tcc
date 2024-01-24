@@ -19,12 +19,10 @@ use App\Models\Defesa;
 use App\Models\Banca;
 
 use Barryvdh\DomPDF\Facade\Pdf;
+use App\Jobs\EnviarEmailAluno;
+use App\Jobs\EnviarEmailOrientador;
 
 use App\Rules\verificaCPF;
-
-use Illuminate\Support\Facades\Mail;
-use App\Mail\NotificacaoAluno;
-use App\Mail\NotificacaoOrientador;
 
 use Uspdev\Replicado\Pessoa;
 
@@ -62,9 +60,9 @@ class OrientadorController extends Controller
                                       ->paginate($paginas);
 
         } else {
-            $orientadores = Orientador::where('nome','like','%')
-                                      ->orderBy('aprovado')
-                                      ->orderBy('nome')->paginate($paginas);
+            $orientadores = Orientador::orderBy('aprovado')
+                                      ->orderBy('nome')
+                                      ->paginate($paginas);
         }
 
         if ($orientadores->isEmpty()) {
@@ -228,10 +226,12 @@ class OrientadorController extends Controller
 
                 $msgComissao = "Orientador ".$orientador->nome." se cadastrou no sistema e aguarda a sua aprovação         
                 ";
-                /*Mail::to("pcalves@usp.br", "Comissão TCC")
-                    ->send(new NotificacaoOrientador($msgComissao,"Cadastro de novo orientador", "Comissão TCC"));*/
-                Mail::to("ctcc.fcf@usp.br", "Comissão TCC")
-                        ->send(new NotificacaoOrientador($msgComissao,"Cadastro de novo orientador", "Comissão TCC"));
+                
+                EnviarEmailOrientador::dispatch(['email'        => "ctcc.fcf@usp.br"
+                                                ,'textoMsg'     => $msgComissao
+                                                ,'assuntoMsg'   => "Cadastro de novo orientador"
+                                                ,'nome'         => "Comissão TCC" 
+                                                ]);
 
             } else {
                 $textoMensagem = "O seu cadastro foi realizado no Sistema de Depósito de TCC da Faculdade de Ciências Farmacêuticas da USP.           
@@ -243,10 +243,12 @@ class OrientadorController extends Controller
                 $textoMensagem.= "Sua senha é ".substr($request->input('cpfOrientador'),0,8)."                               
                 ";
             }
-            /*Mail::to("pcalves@usp.br", $orientador->nome)
-                    ->send(new NotificacaoOrientador($textoMensagem,"Cadastro para acesso ao Sistema de Depósito de TCC - FCF", $orientador->nome));*/
-            Mail::to($orientador->email, $orientador->nome)
-                ->send(new NotificacaoOrientador($textoMensagem,"Cadastro para acesso ao Sistema de Depósito de TCC - FCF", $orientador->nome));
+            
+            EnviarEmailOrientador::dispatch(['email'        => $orientador->email
+                                            ,'textoMsg'     => $textoMensagem
+                                            ,'assuntoMsg'   => "Cadastro para acesso ao Sistema de Depósito de TCC - FCF"
+                                            ,'nome'         => $orientador->nome 
+                                            ]);
 
             if (!auth()->check())
                 return "<script>alert('Cadastro realizado com sucesso. Favor aguardar aprovação do cadastro. Foi enviado um e-mail de confirmação.'); window.location.assign('".route('home')."');</script>";
@@ -476,11 +478,14 @@ class OrientadorController extends Controller
      * @return \Illuminate\Http\Response
      */
     public function getOrientadorByFiltro(Request $request) {
-        $listOrientador = Orientador::where('nome','like','%'.$request->input('filtro').'%')
-                                    ->orWhere('codpes',$request->input('filtro'))
-                                    ->orWhere('CPF','like', '%'.$request->input('filtro').'%')
-                                    ->orWhere('email','like','%'.$request->input('filtro').'%')
-                                    ->paginate(30);
+        $builder = Orientador::where('nome','like','%'.$request->input('filtro').'%');
+        if (is_numeric($request->input('filtro'))) {
+            $builder->orWhere('codpes',$request->input('filtro'));
+        }
+        $builder->orWhere('CPF','like', '%'.$request->input('filtro').'%')
+                        ->orWhere('email','like','%'.$request->input('filtro').'%');
+
+        $listOrientador = $builder->paginate(30);
 
         if ($listOrientador->isEmpty()) {
             $listOrientador[] = new Orientador;
@@ -548,11 +553,11 @@ class OrientadorController extends Controller
         $assunto = null;
         $assuntoMsg = null;
         if ($request->input('acao') == "DEVOLVIDO") {
-            $monografia->status = "AGUARDANDO CORREÇÃO DO PROJETO";
+            $monografia->status = "AGUARDANDO CORRECAO DO PROJETO";
 
             $assunto = "Correção do projeto solicitada pela Comissão";
             
-            $textoMensagem = "O projeto de TCC título **".$dadosMonografia->first()->titulo."** tem uma correção a ser realizada.           
+            $textoMensagem = "O projeto de TCC título **".$monografia->titulo."** tem uma correção a ser realizada.           
             ";
             $textoMensagem.= "**Correção a ser realizada:** *".$request->input('parecer')."*                                                              
             ";
@@ -561,10 +566,10 @@ class OrientadorController extends Controller
             $textoMensagem.= "Clique no botão abaixo para acessar o sistema e efetuar a correção.                         
             ";
 
-            $assuntoMsg = "Projeto de TCC com título ".$dadosMonografia->first()->titulo." foi enviado para o aluno para correção.";
-            $txtMsgOrientador = "O projeto de TCC título **".$dadosMonografia->first()->titulo."** tem uma correção a ser realizada pelo aluno.           
+            $assuntoMsg = "Projeto de TCC do aluno ".$monografia->alunos->first()->nome." foi enviado para correção.";
+            $txtMsgOrientador = "O projeto de TCC título **".$monografia->titulo."** tem uma correção a ser realizada pelo aluno.           
             ";
-            $txtMsgOrientador.= "**Correção a ser realizada:** *".$request->input('parecer')."*                                                              
+            $txtMsgOrientador.= "**Correção a ser realizada:** *".$request->input('parecer')."**                                                              
             ";
             $txtMsgOrientador.= "**Não é necessária nenhuma ação sua, o aluno precisa corrigir o projeto, este e-mail é somente para ciência**                                                               
             ";
@@ -572,7 +577,7 @@ class OrientadorController extends Controller
         } elseif ($request->input('acao') == "REPROVADO") {
             $monografia->status = ""; // neste projeto não está previsto reprovação
             
-            $textoMensagem = "A projeto de TCC título **".$dadosMonografia->first()->titulo."** foi reprovada.             
+            $textoMensagem = "A projeto de TCC título **".$monografia->titulo."** foi reprovada.             
             ";
             $textoMensagem.= "**MOTIVO:** *".$request->input('parecer')."*                       
             ";
@@ -587,17 +592,17 @@ class OrientadorController extends Controller
 
             $textoMensagem = "**PARABÉNS!!!**                                                            
             ";
-            $textoMensagem.= "O projeto TCC título **".$dadosMonografia->first()->titulo."** foi aprovada.         
+            $textoMensagem.= "O projeto TCC do aluno **".$monografia->alunos->first()->nome."** foi aprovada.         
             ";
             $textoMensagem.= "Aguarde a abertura do sistema para anexar o arquivo de TCC e indicação da banca                     
             ";    
             
-            $assuntoMsg = "Projeto de TCC com título ".$dadosMonografia->first()->titulo." foi aprovado pela Comissão.";
-            $txtMsgOrientador = "O projeto de TCC título **".$dadosMonografia->first()->titulo."** foi aprovado pela comissão.           
+            $assuntoMsg = "Projeto de TCC do aluno ".$monografia->alunos->first()->nome." foi aprovado pela Comissão.";
+            $txtMsgOrientador = "O projeto de TCC título **".$monografia->titulo."** foi aprovado pela comissão.           
             ";
             
             if ($dadosMonografia->first()->curriculo == 9013) {
-                $txtMsgOrientador.= "**Entre no sistema para informar a nota e a frequencia do projeto**                                                               
+                $txtMsgOrientador.= "<span style='color:red'>**Entre no sistema para informar a nota e a frequência do projeto**</span>                                                               
                 ";
             } else {
                 $txtMsgOrientador.= "**Não é necessária nenhuma ação, este e-mail é somente para ciência**                                                               
@@ -608,19 +613,18 @@ class OrientadorController extends Controller
 
         if (!empty($textoMensagem)) {
             foreach($dadosMonografia->first()->alunos()->get() as $key=>$aluno) {
-                $email = Pessoa::emailusp($aluno->id);
-                
-                /*Mail::to("pcalves@usp.br", $aluno->nome, $assunto)
-                    ->send(new NotificacaoAluno($textoMensagem,$aluno->nome));*/
-                Mail::to($email, $aluno->nome, $assunto)
-                    ->send(new NotificacaoAluno($textoMensagem,$aluno->nome));
+                EnviarEmailAluno::dispatch(['email'     => Pessoa::emailusp($aluno->id)
+                                            ,'textoMsg' => $textoMensagem
+                                            ,'nome'     => $aluno->nome
+                                            ,'assunto'  => $assunto]);
             }
 
             foreach($dadosMonografia->first()->orientadores()->get() as $orientador) {
-                /*Mail::to("pcalves@usp.br", $orientador->nome)
-                    ->send(new NotificacaoOrientador($txtMsgOrientador, $assuntoMsg, $orientador->nome));*/
-                Mail::to($orientador->email, $orientador->nome)
-                      ->send(new NotificacaoOrientador($txtMsgOrientador, $assuntoMsg, $orientadores->nome));
+                EnviarEmailOrientador::dispatch(['email'        => $orientador->email
+                                                ,'textoMsg'     => $txtMsgOrientador
+                                                ,'assuntoMsg'   => $assuntoMsg
+                                                ,'nome'         => $orientador->nome 
+                                                ]);
             }
         }
         
@@ -711,13 +715,12 @@ class OrientadorController extends Controller
                                         ->get();
         
         
-        /*Mail::to("pcalves@usp.br", $orientador->nome)
-              ->send(new NotificacaoOrientador($textoMensagem,"Cadastro $assunto para acesso ao Sistema de Depósito de TCC - FCF", $orientador->nome));*/
-        Mail::to($orientador->email, $orientador->nome)
-            ->send(new NotificacaoOrientador($textoMensagem,"Cadastro $assunto para acesso ao Sistema de Depósito de TCC - FCF", $orientador->nome));
-        /*Mail::to($presidenteComissao->first()->email, $presidenteComissao->first()->nome)
-                ->send(new NotificacaoOrientador($textoMensagem,"Cadastro para acesso ao Sistema de Depósito de TCC - FCF", $presidenteComissao->first()->nome));*/
-
+        EnviarEmailOrientador::dispatch(['email'        => $orientador->email
+                                        ,'textoMsg'     => $textoMensagem
+                                        ,'assuntoMsg'   => "Cadastro $assunto para acesso ao Sistema de Depósito de TCC - FCF"
+                                        ,'nome'         => $orientador->nome 
+                                        ]);
+        
         print '<script>alert("Orientador '.$orientador->nome.' '.$assunto.' com sucesso."); </script>';
         return redirect()->route('orientador.index');
 
@@ -757,7 +760,7 @@ class OrientadorController extends Controller
             
             $notaProjeto->tipo_nota     = 'PROJETO';
             $notaProjeto->frequencia    = ($request->input('projeto_freq') >100) ? 100 : $request->input('projeto_freq');
-            $notaProjeto->nota          = str_replace(",",".",$request->input('projeto_nota'));
+            $notaProjeto->nota          = is_float($request->input('projeto_nota'))?str_replace(",",".",$request->input('projeto_nota')):$request->input('projeto_nota');
 
             $notaProjeto->nota = ( $notaProjeto->nota > 10)? 10 : $notaProjeto->nota;
 
@@ -780,10 +783,11 @@ class OrientadorController extends Controller
                 ";
                 foreach($monografia->orientadores()->get() as $orientador) {
 
-                    /*Mail::to("pcalves@usp.br", $orientador->nome)
-                        ->send(new NotificacaoOrientador($textoOrientador,"Registrada Nota do Projeto",$orientador->nome));*/
-                    Mail::to($orientador->email, $orientador->nome)
-                        ->send(new NotificacaoOrientador($textoOrientador,"Registrada Nota do Projeto",$orientador->nome));
+                    EnviarEmailOrientador::dispatch(['email'        => $orientador->email
+                                                    ,'textoMsg'     => $textoOrientador
+                                                    ,'assuntoMsg'   => "Registrada Nota do Projeto"
+                                                    ,'nome'         => $orientador->nome 
+                                                    ]);
 
                 }
 
@@ -800,11 +804,10 @@ class OrientadorController extends Controller
                 ";
                 
                 foreach($aluno as $dAluno) {
-                    $emailAluno = Pessoa::emailusp($dAluno->id);
-                    /*Mail::to("pcalves@usp.br", $dAluno->nome)
-                        ->send(new NotificacaoAluno($textoAluno,$dAluno->nome,"Registro de Nota do Projeto"));*/
-                    Mail::to($emailAluno, $dAluno->nome)
-                        ->send(new NotificacaoAluno($textoAluno,$dAluno->nome,"Registro de Nota do Projeto"));
+                    EnviarEmailAluno::dispatch(['email'     => Pessoa::emailusp($dAluno->id)
+                                                ,'textoMsg' => $textoAluno
+                                                ,'nome'     => $dAluno->nome
+                                                ,'assunto'  => "Registro de Nota do Projeto"]);
                 }
             }
         }
@@ -813,7 +816,9 @@ class OrientadorController extends Controller
             
             $notaProjeto->tipo_nota     = 'TCC';
             $notaProjeto->frequencia    = $request->input('tcc_freq');
-            $notaProjeto->nota          = '0'.str_replace(",",".",$request->input('tcc_nota')).'0';
+            $notaProjeto->nota          = is_float($request->input('tcc_nota'))?str_replace(",",".",$request->input('tcc_nota')):$request->input('tcc_nota');
+
+            $notaProjeto->nota = ($notaProjeto->nota > 10) ? 10 : $notaProjeto->nota;
 
             if ($notaProjeto->save()) {
                 $monografia->status = "CONCLUIDO";
@@ -823,22 +828,22 @@ class OrientadorController extends Controller
                 $aluno = $monografia->alunos()->get();
 
                 //Envio de e-mail para todos os Orientadores
-                $textoOrientador = "Você registrou a nota para a aprensentação do TCC do projeto abaixo                                           
+                $textoOrientador = "Você registrou a média final da aprensentação do TCC do projeto abaixo                                           
                 ";
                 $textoOrientador.= "Aluno: ".$aluno->first()->nome."                                                                           
                 ";
                 $textoOrientador.= "Titulo do Projeto: ".$monografia->titulo."                                                        
                 ";
-                $textoOrientador.= "Nota: ".$request->input('projeto_nota')." / Frequencia: ".$request->input('projeto_freq')."                                                
+                $textoOrientador.= "Nota: ".$request->input('tcc_nota')." / Frequencia: ".$request->input('tcc_freq')."                                                
                 ";
                 $textoOrientador.= "**Nenhuma ação é necessária, este é somente um e-mail informativo**         
                 ";
                 foreach($monografia->orientadores()->get() as $orientador) {
-
-                    /*Mail::to("pcalves@usp.br", $orientador->nome)
-                        ->send(new NotificacaoOrientador($textoOrientador,"Registrada Nota do Projeto",$orientador->nome));*/
-                    Mail::to($orientador->email, $orientador->nome)
-                        ->send(new NotificacaoOrientador($textoOrientador,"Registrada Nota do Projeto",$orientador->nome));
+                    EnviarEmailOrientador::dispatch(['email'        => $orientador->email
+                                                    ,'textoMsg'     => $textoOrientador
+                                                    ,'assuntoMsg'   => "Registrada Média Final da Defesa do TCC"
+                                                    ,'nome'         => $orientador->nome 
+                                                    ]);
 
                 }
 
@@ -849,16 +854,15 @@ class OrientadorController extends Controller
                 ";
                 $textoAluno.= "Titulo do Projeto: ".$monografia->titulo."                                                        
                 ";
-                $textoAluno.= "Nota: ".$request->input('projeto_nota')." / Frequencia: ".$request->input('projeto_freq')."                                                
+                $textoAluno.= "Nota: ".$request->input('tcc_nota')." / Frequencia: ".$request->input('tcc_freq')."                                                
                 ";
                 $textoAluno.= "**Nenhuma ação é necessária, este é somente um e-mail informativo**         
                 ";
                 foreach($aluno as $dAluno) {
-                    $emailAluno = Pessoa::emailusp($dAluno->id);
-                    /*Mail::to("pcalves@usp.br", $dAluno->nome)
-                        ->send(new NotificacaoAluno($textoAluno,$dAluno->nome,"Registrada Nota para Apresentação de TCC"));*/
-                    Mail::to($emailAluno, $dAluno->nome)
-                        ->send(new NotificacaoAluno($textoAluno,$dAluno->nome,"Registrada Nota para Apresentação de TCC"));
+                    EnviarEmailAluno::dispatch(['email'     => Pessoa::emailusp($dAluno->id)
+                                                ,'textoMsg' => $textoAluno
+                                                ,'nome'     => $dAluno->nome
+                                                ,'assunto'  => "Registrada média final da Defesa do TCC"]);
                 }
 
                 if ($notaProjeto->nota >= 5) {
@@ -919,17 +923,19 @@ class OrientadorController extends Controller
 
                 $body = "O orientador registrou a nota para o TCC.                                           
                 ";
-                $textoAluno.= "Titulo do Projeto: ".$monografia->titulo."                                                        
+                $body.= "Titulo do Projeto: ".$monografia->titulo."                                                        
                 ";
-                $textoAluno.= "Nota: ".$request->input('projeto_nota')." / Frequência: ".$request->input('projeto_freq')."                                                
+                $body.= "Nota: ".$request->input('tcc_nota')." / Frequência: ".$request->input('tcc_freq')."                                                
                 ";
-                $textoAluno.= "**Anexo relatório de Defesa do TCC**         
+                $body.= "**Anexo relatório de Defesa do TCC**         
                 ";
 
-                /*Mail::to("pcalves@usp.br", "Comissão TCC")
-                    ->send(new NotificacaoOrientador($body, "Relatório de Defesa TCC titulo ".$monografia->titulo, "Comissão TCC", public_path()."/upload/".$nomeArq));*/
-                Mail::to("ctcc.fcf@usp.br", "Comissão TCC")
-                    ->send(new NotificacaoOrientador($body, "Relatório de Defesa TCC titulo ".$monografia->titulo, "Comissão TCC", public_path()."/upload/".$nomeArq));
+                EnviarEmailOrientador::dispatchSync(['email'        => "ctcc.fcf@usp.br"
+                                                    ,'textoMsg'     => $body
+                                                    ,'assuntoMsg'   => "Relatório de Defesa TCC titulo ".$monografia->titulo
+                                                    ,'nome'         => "Comissão TCC" 
+                                                    ,'attach'       => public_path()."/upload/".$nomeArq
+                                                    ]);
 
                 File::delete(public_path()."/upload/".$nomeArq);
             }
@@ -977,23 +983,26 @@ class OrientadorController extends Controller
             $nomeDestino = "Comissão de TCC";
         } else {
             //E-mail para aluno corrigir a banca
-            $assunto = "Orientador não está de acordo com a Banca sugerida.";
+            $assunto = "A banca sugerida para a defesa do seu projeto não foi aprovada.";
+
             $txtMensagem = "A banca sugerida para o projeto título ".$monografia->titulo." não foi aprovada pelo Orientador.   
             ";
             $txtMensagem.= "**Orientador Responsável:** ".$monografia->orientadores->first()->nome."                           
             ";
             $txtMensagem.= "**Orientações:** ".$request->input('correcao_banca')."                                             
             "; // Orientações de correção da banca para o aluno
-            $txtMensagem.= "**Favor entrar no sistema e corrigir as informações como orientado com a maior brevidade possível**
+            $txtMensagem.= "**Favor entrar no sistema e fazer as correções indicadas**
+            ";
+            $txtMensagem.= "**Seu prazo é de 2 dias úteis**
             ";
             $emailDestino = Pessoa::emailusp($monografia->alunos->first()->id);
             $nomeDestino = $monografia->alunos->first()->nome;
         }
 
-        /*Mail::to("pcalves@usp.br", $nomeDestino)
-            ->send(new NotificacaoAluno($txtMensagem,$nomeDestino,$assunto));*/
-        Mail::to($emailDestino, $nomeDestino)
-              ->send(new NotificacaoAluno($txtMensagem,$nomeDestino,$assunto));
+        EnviarEmailAluno::dispatch(['email'     => $emailDestino
+                                    ,'textoMsg' => $txtMensagem
+                                    ,'nome'     => $nomeDestino
+                                    ,'assunto'  => $assunto]);
 
         print "<script>alert('A banca foi ".(($request->input('aprovacao_orientador_banca'))?'APROVADA':'REPROVADA')." um e-mail foi enviado para $nomeDestino para as providências necessárias'); </script>";
         

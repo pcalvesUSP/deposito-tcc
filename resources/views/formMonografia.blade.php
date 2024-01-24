@@ -60,7 +60,7 @@
     STATUS: {{(isset($dadosMonografia->status)) ? $dadosMonografia->status :  "NÃO CADASTRADO" }} <br/>
     SEMESTRE/ ANO: {{(isset($dadosMonografia->ano)) ? $dadosMonografia->semestre."/ ".$dadosMonografia->ano :  "NÃO CADASTRADO" }}
   </p>
-  <form id="formMonografia" method="post" action="@if ($edicao && !empty($dadosMonografia->id)) {{ route("alunos.corrigir",['id'=>$dadosMonografia->id]) }} @elseif($aprovOrientador) {{ route("orientador.aprovacao") }} @elseif($indicarParecerista) {{ route('indicaParecerista')}} @else {{ route("salvarMonografia") }} @endif" enctype="multipart/form-data">
+  <form id="formMonografia" method="post" action="@if($aprovOrientador) {{ route("orientador.aprovacao") }} @elseif ($edicao && !empty($dadosMonografia->id)) {{ route("alunos.corrigir",['id'=>$dadosMonografia->id]) }} @elseif($indicarParecerista) {{ route('indicaParecerista')}} @else {{ route("salvarMonografia") }} @endif" enctype="multipart/form-data">
     <fieldset id="fieldsMonografia" class="grupo">
       @csrf
       @if ($edicao || $aprovOrientador || $indicarParecerista)

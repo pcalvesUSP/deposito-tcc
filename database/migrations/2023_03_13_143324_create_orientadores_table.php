@@ -31,8 +31,8 @@ class CreateOrientadoresTable extends Migration
             $table->timestamps();
             $table->softDeletes();
 
-            $table->unique('CPF');
-            $table->unique('codpes');
+            //$table->unique('CPF'); //no sqlserver não podem haver valores nulos
+            //$table->unique('codpes'); //no sqlserver não podem haver valores nulos
             $table->unique('email');
         });
     }

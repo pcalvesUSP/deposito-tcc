@@ -103,11 +103,10 @@ class RelatoriosController extends Controller
         $monografias = Monografia::with(['bancas','alunos','orientadores','defesas'])
                                  ->where('ano',$request->input('ano_banca'))
                                  ->where('semestre',$request->input('semestre_banca'))
-                                 ->whereRelation('defesas','dataEscolhida', null)
                                  ->get();
 
-        if (!isset($monografias->first()->id)) {
-            return '<script>alert("Não existem registros para este ano/semestre sem validação."); window.location="'.route('declaracao').'";</script>';
+        if ($monografias->isEmpty()) {
+            return '<script>alert("Não existem registros para este ano/semestre."); window.location="'.route('declaracao').'";</script>';
         }
 
         $emailAluno = Pessoa::emailusp($monografias->first()->alunos->first()->id);

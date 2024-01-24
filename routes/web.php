@@ -99,14 +99,15 @@ Route::prefix('comissao')->group(function() {
     Route::post('/avaliacao/',[App\Http\Controllers\OrientadorController::class,'salvarAvaliacao'])->name('comissao.salvarParecer');
 });
 
-Route::get('notificacao/{msg}',function($msg) {
+//Daqui para baixo desativar em produção
+Route::get('notificacao/{msg}',function($nome) {
     $textoMensagem = "A monografia título **TESTE TITULO** tem uma correção a ser realizada.
     Orientador responsável: **TESTE RESP**.                                                 
     Parecer: *teste*                                                                          
     Clique no botão abaixo para acessar o sistema e efetuar a correção.";
     
     
-    return new App\Mail\NotificacaoAluno($textoMensagem,$msg);
+    return new App\Mail\NotificacaoAluno($textoMensagem,$nome,"TESTE DE E-MAIL");
 });
 
 Route::get('declaracao-teste', function() {

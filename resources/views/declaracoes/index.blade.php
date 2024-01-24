@@ -24,10 +24,10 @@
     </form>
     </p>
 
-    <div style="background-color: rgb(245, 215, 240);">
+    <p>
       <form action="{{ route('relatorio.bancasSugeridas') }}" method="post" id="relatorioSugestaoBanca">
       @csrf
-      Sugestão de Banca -> Ano: 
+      Informações de Banca -> Ano: 
       <select name="ano_banca" id="ano">
         <option value="">Selecione</option>
       @foreach ($anosCadastrados as $ano)
@@ -43,7 +43,7 @@
         <input type="submit" value="OK"><br/>
       <div class="erro">{{  $errors->has('ano_banca') || $errors->has('semestre_banca')  ? $errors->first('ano_banca')." ".$errors->has('semestre_banca'):null }}</div>
       </form>
-    </div>
+    </p>
 
     <p>
         <form action="{{ route('relatorio.notas-projeto-tcc') }}" method="post" id="relatorioNotas">
@@ -65,7 +65,7 @@
         </form>
       </p>
 
-      <div style="background-color: rgb(245, 215, 240);">
+      <p>
         <form action="{{ route('relatorio.tema-defendido') }}" method="post" id="relatorioTemaDefendido">
         @csrf
         Relatório Tema Defendido -> Ano: 
@@ -84,7 +84,7 @@
           <input type="submit" value="OK"><br/>
         <div class="erro">{{  $errors->has('ano_tema') || $errors->has('semestre_tema')  ? $errors->first('ano_tema')." ".$errors->has('semestre_tema'):null }}</div>
         </form>
-      </div>
+      </p>
 
         <p>
         <form action="{{ route('relatorio.final') }}" method="post" id="relatorioFinal" target="_blank">
