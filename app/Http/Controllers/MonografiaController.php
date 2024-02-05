@@ -1371,6 +1371,16 @@ class MonografiaController extends Controller
             $txtEmailComissao.= "Encaminhe para avaliação, indicando um parecerista no Sistema                                                      
             ";
 
+            $Presidente = Comissao::where('papel','COORDENADOR')
+                                  ->where('dtInicioMandato','>=',date('Y-m-d'))
+                                  ->where('dtFimMandato','<=',date('Y-m-d'))
+                                  ->get();
+
+            EnviarEmailAluno::dispatch(['email'   => $Presidente->first()->email
+                                      ,'textoMsg' => $txtEmailComissao
+                                      ,'nome'     => $Presidente->first()->nome
+                                      ,'assunto'  => "Projeto aprovado pelo Orientador"]);
+
             EnviarEmailAluno::dispatch(['email'     => "ctcc.fcf@usp.br"
                                         ,'textoMsg' => $txtEmailComissao
                                         ,'nome'     => "Comissão de TCC"

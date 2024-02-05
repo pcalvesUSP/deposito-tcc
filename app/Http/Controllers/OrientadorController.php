@@ -187,7 +187,7 @@ class OrientadorController extends Controller
                                             window.location.assign('".route('orientador.novo-cadastro')."');
                             </script>";
                 } else {
-                    return "<script> alert('O26-Erro ao copiar o arquivo do comprovante.'); 
+                    return "<script> alert('O27-Erro ao copiar o arquivo do comprovante.'); 
                                             window.location.assign('".route('home')."');
                             </script>";
                 }
@@ -226,6 +226,17 @@ class OrientadorController extends Controller
 
                 $msgComissao = "Orientador ".$orientador->nome." se cadastrou no sistema e aguarda a sua aprovação         
                 ";
+
+                $Presidente = Comissao::where('papel','COORDENADOR')
+                                      ->where('dtInicioMandato','>=',date('Y-m-d'))
+                                      ->where('dtFimMandato','<=',date('Y-m-d'))
+                                      ->get();
+
+                EnviarEmailOrientador::dispatch(['email'        => $Presidente->first()->email
+                                                ,'textoMsg'     => $msgComissao
+                                                ,'assuntoMsg'   => "Cadastro de novo orientador"
+                                                ,'nome'         => $Presidente->first()->nome 
+                                                ]);
                 
                 EnviarEmailOrientador::dispatch(['email'        => "ctcc.fcf@usp.br"
                                                 ,'textoMsg'     => $msgComissao
