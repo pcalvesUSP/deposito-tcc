@@ -9,7 +9,7 @@
         soluções para um problema de relevância nas ciências farmacêuticas.
     </p>
     <p><a href="https://www.fcf.usp.br/arquivos/graduacao/TCC/MANUAL%20DE%20TCC%20FCFUSP%202021.pdf" targe="_blank">MANUAL DE TRABALHO DE CONCLUSÃO DE CURSO FCFUSP</a></p>
-    <p><a href="http://www.fcf.usp.br/arquivos/06122022-113956.pdf" target="_blank">Cronograma TCC 2023-2024</a></p>
+    <p><a href="http://fcf.usp.br/arquivos/27102023-162859.pdf" target="_blank">Cronograma TCC 2024-2025</a></p>
 
     @auth
         

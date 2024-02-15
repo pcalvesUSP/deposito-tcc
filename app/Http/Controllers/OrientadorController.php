@@ -3,15 +3,11 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\File;
-use Illuminate\Validation\Rule;
 
 use App\Models\Orientador;
-use App\Models\Replicado;
 use App\Models\Avaliacao;
 use App\Models\Monografia;
-use App\Models\MonoOrientadores;
 use App\Models\Comissao;
 use App\Models\User;
 use App\Models\Nota;
@@ -100,7 +96,7 @@ class OrientadorController extends Controller
     public function store(Request $request)
     {
         $rules = [];
-        $rules['comprovante_vinculo']= ["file","mimes:application/pdf,jpg,png"];
+        $rules['comprovante_vinculo']= ["file","mimes:application/pdf,application/jpg,application/png"];
 
         if ($request->input('externo')) {
             if ($request->filled('cpfOrientador') && Orientador::where('CPF',$request->input('cpfOrientador'))->count() > 0 && !auth()->check()) {
@@ -119,7 +115,7 @@ class OrientadorController extends Controller
                 $rules['instituicaoOrientador'] = ["required","min:3","max:150"];
                 $rules['linkLattes']            = ["required","max:255"];
                 $rules['area_atuacao']          = ["required","min:3"];
-                $rules['comprovante_vinculo']   = ["required","file","mimes:application/pdf,jpg,png"];
+                $rules['comprovante_vinculo']   = ["required","file","mimes:application/pdf,application/jpg,application/png"];
             }
         } else {
             $objRemovido = Orientador::onlyTrashed()->where('codpes',$request->input('nuspOrientador'))->get();

@@ -10,6 +10,7 @@
 @if ($acao == "atualizacao") @method('PUT') @endif
 <p>
 <select name="semestreAno" id="semestreAno">
+  <option>Selecione</option>
   @if (!$dadosParam->isEmpty())
       <option selected value="{{$dadosParam->first()->ano."-".$dadosParam->first()->semestre}}">Ano: {{ $dadosParam->first()->ano }} / Semestre: {{ $dadosParam->first()->semestre }}</option>
   @endif

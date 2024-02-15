@@ -42,12 +42,17 @@ class AlunoController extends Controller
      */
     public function index($monografia_id = 0, $ano = null, $mensagem = null)
     {
-        $parametroSistema = Parametro::where('ano',date('Y'))->whereNull('codpes')->get();
-        if ($parametroSistema->isEmpty() && auth()->user()->hasRole('aluno')) {
+        $parametroSistema = Parametro::getDadosParam($monografia_id);
+        if ($parametroSistema === false) {
+            $aluno = Aluno::where('id',auth()->user()->codpes)->get();
+            $parametroSistema = Parametro::getDadosParam($aluno->first()->monografia_id);
+        }
+        
+        if ($parametroSistema === false && auth()->user()->hasRole('aluno')) {
             print("<script>alert('Sistema ainda não parametrizado. Entre em contato com o Serviço de Graduação.');</script>");
             return redirect('home');
         }
-        
+
         $monografia = new MonografiaController();
         return $monografia->index($monografia_id, $ano, $mensagem);
     }

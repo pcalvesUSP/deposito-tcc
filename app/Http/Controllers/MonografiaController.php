@@ -56,12 +56,17 @@ class MonografiaController extends Controller
      */
     public function index($monografia_id = 0, $ano = null, $msg = null, $acao = null)
     {        
-        $dadosParam = Parametro::getDadosParam($monografia_id);
-        if ($dadosParam === false && (auth()->user()->hasRole('orientador') || auth()->user()->hasRole('aluno') || auth()->user()->hasRole('avaliador'))) {
-            return "<script> alert('M17-Sistema não parametrizado. Entre em contato com a Graduação'); 
-                                        window.location.assign('".route('home')."');
-                    </script>";
+        if ($monografia_id > 0) {
+            $dadosParam = Parametro::getDadosParam($monografia_id);
+            if ($dadosParam === false && (auth()->user()->hasRole('orientador') || auth()->user()->hasRole('aluno') || auth()->user()->hasRole('avaliador'))) {
+                return "<script> alert('M17-Sistema não parametrizado. Entre em contato com a Graduação'); 
+                                            window.location.assign('".route('home')."');
+                        </script>";
+            }
+        } else {
+            $dadosParam = Parametro::getDadosParam();
         }
+        $paramUtilizado = $dadosParam->semestre."-".$dadosParam->ano;
 
         $dataAtual = date_create('now');
         $semestreAtual = 1;
@@ -71,13 +76,12 @@ class MonografiaController extends Controller
         $anoAtual = $dataAtual->format('Y');
 
         $listaParam = Parametro::select('id','ano','semestre')->whereNull('codpes')->orderBy('ano')->orderBy('semestre')->distinct()->get();
-        $paramUtilizado = $dadosParam->semestre."-".$dadosParam->ano;
+        
 
         $uploadTcc = 0;
         $readonly = 1;
         $publicar = 0;
         $userLogado = null;
-        $msgAbertura = null;
         $avaliar = 0;
         $aprovOrientador = 0;
         $edicao = 0;
@@ -247,8 +251,13 @@ class MonografiaController extends Controller
             }
             
             if ($mono_id > 0) {
-                
                 $dadosParam = Parametro::getDadosParam($mono_id);
+                if ($dadosParam === false && (auth()->user()->hasRole('orientador') || auth()->user()->hasRole('aluno') || auth()->user()->hasRole('avaliador'))) {
+                    return "<script> alert('M17-Sistema não parametrizado. Entre em contato com a Graduação'); 
+                                                window.location.assign('".route('home')."');
+                            </script>";
+                }
+                $paramUtilizado = $dadosParam->semestre."-".$dadosParam->ano;
                 
                 if (empty($ano)) {
                     $dadosMonografia = Monografia::with(['alunos', 'orientadores','unitermos'])->orderBy('ano')->where('id',$mono_id)->get();
