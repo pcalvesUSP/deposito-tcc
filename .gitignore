@@ -3,7 +3,6 @@
 /public/upload/
 /public/declaracao_banca/
 /storage/*.key
-/vendor
 /routes/web-producao.php
 .env
 .env-producao
