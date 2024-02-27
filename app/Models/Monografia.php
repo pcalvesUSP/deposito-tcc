@@ -135,7 +135,7 @@ class Monografia extends Model
         $orientadores = array();
 
         $build = DB::table('monografias')
-                   ->select("monografias.*", "o.id as orientador_id", "o.codpes as numUspOrientador", "o.nome as nomeOrientador",
+                   ->select("monografias.*", "o.id as orientador_id", "o.nome as nomeOrientador", "o.codpes as numUspOrientador", "o.nome as nomeOrientador",
                             "om.principal","alunos.id as numUspAluno", "alunos.nome as nomeAluno"
                             ) 
                    ->join("mono_orientadores as om","monografias.id", "=" ,"om.monografia_id")
@@ -171,6 +171,8 @@ class Monografia extends Model
         $build->where('alunos.nome','like','%'.$filtro.'%');
         $build->orWhere('alunos.id','like','%'.$filtro.'%');
         $build->orWhere('monografias.titulo','like','%'.$filtro.'%');
+        $build->orWhere('o.nome','like','%'.$filtro.'%');
+        $build->orWhere('o.codpes','like','%'.$filtro.'%');
 
         if (strlen($filtro) > 4) {
             if (strpos($filtro,"-") !== false) {

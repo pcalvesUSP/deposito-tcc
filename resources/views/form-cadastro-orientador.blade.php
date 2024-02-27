@@ -8,20 +8,23 @@
     @if (isset($objOrientador)) @method("PUT") @endif
     <div class="campo"><label>Orientador Externo? </label><input type="checkbox" name="externo" id="externo" value="1" @if (old('externo')==1 || (isset($objOrientador) && $objOrientador->externo == 1)) checked @endif @if (isset($objOrientador)) disabled @endif><br/></div>
     <div id="divNUSP" style="display:inline">
-        <label for="nuspOrientador">Número USP: </label><input type="text" class="inputBorder" style="left:205px;" name="nuspOrientador" id="nuspOrientador" value="{{ (isset($objOrientador)?$objOrientador->codpes:old('nuspOrientador')) }}" @if (isset($objOrientador)) disabled @endif><br>
+        <label for="nuspOrientador">Número USP: </label><input type="text" class="inputBorder" style="left:205px;" name="nuspOrientador" id="nuspOrientador" value="{{ (isset($objOrientador)?$objOrientador->codpes:old('nuspOrientador')) }}" @if (isset($objOrientador) && $objOrientador->externo == 0) disabled @endif><br>
     </div>
     <div id="divExt" style="display:none">
         <label for="cpfOrientador">CPF (Somente n&uacute;meros): </label><input type="text" class="inputBorder" style="left:124px;" name="cpfOrientador" id="cpfOrientador" size="20" value="{{ (isset($objOrientador)?$objOrientador->CPF:old('cpfOrientador')) }}" @if (isset($objOrientador) || $readonly) disabled @endif ><br>
         <div class="erro" id="eCpfOrientador">{{  $errors->has('cpfOrientador') ? $errors->first('cpfOrientador'):null }}</div>
     </div>
     <label for="nomeOrientador">Nome: </label><input type="text" class="inputBorder" style="left:255px;" name="nomeOrientador" id="nomeOrientador" size="50" value="{{ (isset($objOrientador)?$objOrientador->nome:old('nomeOrientador')) }}" required @if ($readonly) disabled @endif><br>
+    <div class="erro" id="enomeOrientador">{{  $errors->has('nomeOrientador') ? $errors->first('nomeOrientador'):null }}</div>
     <label for="emailOrientador">E-mail: </label><input type="text" class="inputBorder" style="left:252px;" name="emailOrientador" id="emailOrientador" size="50" value="{{ (isset($objOrientador)?$objOrientador->email:old('emailOrientador')) }}" required @if ($readonly) disabled @endif><br>
-    <label for="telefoneOrientador">Telefone: </label><input type="text" class="inputBorder" style="left:237px;" name="telefoneOrientador" id="telefoneOrientador" size="30" value="{{ (isset($objOrientador)?$objOrientador->telefone:old('telefoneOrientador')) }}" required @if ($readonly) disabled @endif><br>
+    <div class="erro" id="eemailOrientador">{{  $errors->has('emailOrientador') ? $errors->first('emailOrientador'):null }}</div>
+    <label for="telefoneOrientador">Telefone: </label><input type="text" class="inputBorder" style="left:237px;" name="telefoneOrientador" id="telefoneOrientador" size="30" value="{{ (isset($objOrientador)?$objOrientador->telefone:old('telefoneOrientador')) }}" @if (!isset($objOrientador)) required @endif @if ($readonly) disabled @endif><br>
+    <div class="erro" id="etelefoneOrientador">{{  $errors->has('telefoneOrientador') ? $errors->first('telefoneOrientador'):null }}</div>
     <label for="instituicaoOrientador">Instituição de Vínculo: </label><input type="text" class="inputBorder" style="left:145px;" name="instituicaoOrientador" id="instituicaoOrientador" size="50" value="{{ (isset($objOrientador)?$objOrientador->instituicao_vinculo:old('instituicaoOrientador')) }}" required @if ($readonly) disabled @endif><br>
     @if(isset($objOrientador) && !empty($objOrientador->comprovante_vinculo))
     <label>Comprovante de vínculo com a Instituição: </label> <a href="upload/orientador/{{ $objOrientador->comprovante_vinculo }}" target="_blank">Verifique o comprovante</a><br/>
     @else
-    <label for="comprovanteVinculo">Comprovante de vínculo com a Instituição: </label><input type="file" name="comprovante_vinculo" id="comprovante_vinculo" required @if ($readonly) disabled @endif><br>
+    <label for="comprovante_vinculo">Comprovante de vínculo com a Instituição: </label><input type="file" name="comprovante_vinculo" id="comprovante_vinculo" @if (!isset($objOrientador)) required @endif @if ($readonly) disabled @endif><br>
     <div class="erro" id="ecomprovante_vinculo">{{  $errors->has('comprovante_vinculo') ? $errors->first('comprovante_vinculo'):null }}</div>
     @endif
     <label for="linkLattes">Link Lattes: </label><input type="text" class="inputBorder" style="left:218px;" name="linkLattes" id="linkLattes" size="50" value="{{ (isset($objOrientador)?$objOrientador->link_lattes:old('linkLattes')) }}" @if ($readonly) disabled @endif><br>

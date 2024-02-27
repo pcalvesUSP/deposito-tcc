@@ -2,18 +2,24 @@ $( document ).ready(function(){
 
 	if ($("#externo").is(":checked")) {
 		$("#divExt").css({"display":"inline"}); 
-        $("#divNUSP").css({"display":"none"});
+        $("#divNUSP").css({"display":"inline"});
+		$("label[for=nuspOrientador]").html("Número USP (se houver): ");
+		$("input[name=nuspOrientador]").css({"left":"121px"});
 	}
 
 	$("#externo").click(function() {
         if ($(this).is(":checked")) { 
 			$("#divExt").css({"display":"inline"}); 
-            $("#divNUSP").css({"display":"none"});
+            $("#divNUSP").css({"display":"inline"});
+			$("label[for=nuspOrientador]").html("Número USP (se houver): ");
+			$("input[name=nuspOrientador]").css({"left":"121px"});
 			$("#nomeOrientador").val("");
 			$("#emailOrientador").val("");
 		} else {
 			$("#divExt").css({"display":"none"}); 
 			$("#divNUSP").css({"display":"inline"});
+			$("label[for=nuspOrientador]").html("Número USP: ");
+			$("input[name=nuspOrientador]").css({"left":"205px"});
     	}
     });
 
@@ -25,7 +31,7 @@ $( document ).ready(function(){
 	
 	$("#nuspOrientador").blur(function() {
 	    
-	    if ($(this).val().length > 0) {
+	    if ($(this).val().length > 0 && !$("#externo").is(":checked")) {
 			$.ajax({
 			  url: "/orientador/ajaxBuscaDadosOrientador/"+$(this).val(),
 			  method: "GET",
@@ -64,9 +70,9 @@ $( document ).ready(function(){
 			});
 		} else {
 		    //alert("O N.o USP do Orientador deve ser informado");
-		    $("#nomeOrientador").val("");
-		    $("#emailOrientador").val("");
-		    $("#externo").attr("disabled",false);
+		    //$("#nomeOrientador").val("");
+		    //$("#emailOrientador").val("");
+		    //$("#externo").attr("disabled",false);
 		}
 	});
 	

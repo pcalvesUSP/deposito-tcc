@@ -22,6 +22,7 @@
         <label for="cpfOrientador">CPF (Somente n&uacute;meros): </label><input type="text" class="inputBorder" style="left:124px;" name="cpfOrientador" id="cpfOrientador" size="20" value="{{ old('cpfOrientador') }}" required><br>
         <div class="erro" id="eCpfOrientador">{{  $errors->has('cpfOrientador') ? $errors->first('cpfOrientador'):null }}</div>
     </div>
+    <label for="nuspOrientador">N.º USP (se houver): </label><input type="text" class="inputBorder" style="left:158px;" name="nuspOrientador" id="nuspOrientador" size="20" value="{{ old('nuspOrientador') }}"><br>
     <label for="nomeOrientador">Nome: </label><input type="text" class="inputBorder" style="left:255px;" name="nomeOrientador" id="nomeOrientador" size="50" value="{{ old('nomeOrientador') }}" required><br>
     <div class="erro" id="eNomeOrientador">{{  $errors->has('nomeOrientador') ? $errors->first('nomeOrientador'):null }}</div>
     <label for="emailOrientador">E-mail: </label><input type="text" class="inputBorder" style="left:252px;" name="emailOrientador" id="emailOrientador" size="50" value="{{ old('emailOrientador') }}" required><br>

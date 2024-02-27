@@ -1381,8 +1381,8 @@ class MonografiaController extends Controller
             ";
 
             $Presidente = Comissao::where('papel','COORDENADOR')
-                                  ->where('dtInicioMandato','>=',date('Y-m-d'))
-                                  ->where('dtFimMandato','<=',date('Y-m-d'))
+                                  ->where('dtInicioMandato','<=',date('Y-m-d'))
+                                  ->where('dtFimMandato','>=',date('Y-m-d'))
                                   ->get();
 
             EnviarEmailAluno::dispatch(['email'   => $Presidente->first()->email

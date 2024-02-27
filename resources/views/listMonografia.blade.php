@@ -30,18 +30,19 @@
       @csrf
       <input type="hidden" name="id_orientador" value="{{ $id_orientador }}">
       <tr>
-        <th @if (strpos($userLogado,"Orientador") !== false) colspan="7" @else colspan="5" @endif style="text-align:right;background:#c6c2eb;">Filtrar: <input type="text" id="filtro" name="filtro" value="{{ empty($filtro)?old('filtro'):$filtro }}" size="15" style="font-weight:bold;width:150px;border: solid 1px blue;"/></th>
+        <th colspan="7" style="text-align:right;background:#c6c2eb;">Filtrar: <input type="text" id="filtro" name="filtro" value="{{ empty($filtro)?old('filtro'):$filtro }}" size="15" style="font-weight:bold;width:150px;border: solid 1px blue;"/></th>
       </tr>
     </form>
     <tr>
-        <th style="width:25%" class="tableData">Titulo</th>
-        <th style="width:25%" class="tableData">Aluno(s)</th>
-        <th style="width:25%" class="tableData">Ano</th>
-        <th style="width:25%" class="tableData" @if ($userLogado == "Orientador") colspan="4" @else colspan="2" @endif >Ações</th>
+        <th style="width:20%" class="tableData">Titulo</th>
+        <th style="width:20%" class="tableData">Aluno</th>
+        <th style="width:20%" class="tableData">Orientador</th>
+        <th style="width:20%" class="tableData">Ano</th>
+        <th style="width:20%" class="tableData" @if ($userLogado == "Orientador") colspan="4" @else colspan="2" @endif >Ações</th>
     </tr>
     </thead>
     @if (!empty($filtro))
-        <tr><td class="tableData" colspan="6">Busca por termo: {{ $filtro }}<br/><a href="{{ route('orientador.lista_monografia') }}" >Resetar a busca</a></td></tr>
+        <tr><td class="tableData" colspan="5">Busca por termo: {{ $filtro }}<br/><a href="{{ route('orientador.lista_monografia') }}" >Resetar a busca</a></td></tr>
     @endif
     
     @php
@@ -49,23 +50,28 @@
     @endphp
 
     @if ($dadosMonografias->isEmpty())
-        <tr><td colspan="7" style="text-align: center;">Nenhum registro encontrado</td></tr>
+        <tr><td colspan="5" style="text-align: center;">Nenhum registro encontrado</td></tr>
     @endif
     
     @foreach ($dadosMonografias as $objMonografia)
         @if ($idMono == $objMonografia->id )
             @continue
         @endif
-
     <tr>
-        <td style="width:25%" class="tableData">{{ $objMonografia->titulo }}</td>
-        <td style="width:25%" class="tableData">
+        <td style="width:20%" class="tableData">{{ $objMonografia->titulo }}</td>
+        <td style="width:20%" class="tableData">
         @foreach ($grupoAlunos[$objMonografia->id] as $k=>$aluno)
             @if ($k!=0) <br/> @endif
             {{ $aluno->id }} - {{ $aluno->nome }}
         @endforeach
         </td>
-        <td style="width:25%" class="tableData">{{ $objMonografia->semestre }}-{{ $objMonografia->ano }}</td>
+        <td style="width:20%" class="tableData">
+        @foreach ($dadosOrientadores[$objMonografia->id] as $k=>$orientador)
+            @if ($k!=0) <br/> @endif
+            {{ $orientador->codpes }} {{ $orientador->nome }}
+        @endforeach
+        </td>
+        <td style="width:20%" class="tableData">{{ $objMonografia->semestre }}-{{ $objMonografia->ano }}</td>
         
         @if (empty($sistema_aberto[$objMonografia->id]) && strpos($userLogado,'Orientador') !== false && (strpos($_GET['route'],"orientador") !== false || strpos($_GET['route'],"buscaMonografia") !== false))
             <td style="width:6.25%" class="tableData" colspan="4"><a href="{{ route('orientador.edicao',['idMono'=>$objMonografia->id]) }}">VISUALIZAR</a> </td>

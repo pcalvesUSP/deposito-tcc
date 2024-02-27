@@ -140,3 +140,4 @@ Route::get('relatorio-teste', function() {
 });
 
 Route::get('/configuracao-inicial',[ConfigInicial::class,'index'])->name('config.index');
+Route::get('/ajusteCadastro',[App\Http\Controllers\LoginExtController::class,'ajusteCadastroOrientadorExterno']);

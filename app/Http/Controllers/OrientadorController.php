@@ -112,10 +112,10 @@ class OrientadorController extends Controller
             $messages['cpfOrientador.required'] = "Favor informar o CPF do Orientador";
             $externo = 1;
             if (!auth()->check()) {
-                $rules['instituicaoOrientador'] = ["required","min:3","max:150"];
+                $rules['instituicaoOrientador'] = ["required","min:2","max:150"];
                 $rules['linkLattes']            = ["required","max:255"];
                 $rules['area_atuacao']          = ["required","min:3"];
-                $rules['comprovante_vinculo']   = ["required","file","mimes:application/pdf,application/jpg,application/png"];
+                $rules['comprovante_vinculo']   = ["required","file","mimes:pdf,jpg,png"];
             }
         } else {
             $objRemovido = Orientador::onlyTrashed()->where('codpes',$request->input('nuspOrientador'))->get();
@@ -154,7 +154,7 @@ class OrientadorController extends Controller
             }
         }
 
-        $orientador->codpes     = $request->input('nuspOrientador');
+        if ($request->filled('nuspOrientador')) $orientador->codpes = $request->input('nuspOrientador');
         $orientador->nome       = $request->input('nomeOrientador');
         $orientador->email      = $request->input('emailOrientador');
         $orientador->telefone   = $request->input('telefoneOrientador');
@@ -326,16 +326,17 @@ class OrientadorController extends Controller
         $rules = [];
         $rules['nomeOrientador']       = ["required","min:3","max:80"];
         $rules['emailOrientador']      = ["required","min:3", "email"];
-        $rules['telefoneOrientador']   = ["required","min:10"];
-        $rules['instituicaoOrientador']= ["required","min:3","max:150"];
-        $rules['comprovante_vinculo']  = ["file","mimes:application/pdf,jpg,png"];
+        $rules['instituicaoOrientador']= ["required","min:2","max:150"];
+        $rules['comprovante_vinculo']  = ["file","mimes:pdf,jpg,png"];
         
         $messages['required']   = "Favor informar o :attribute do orientador.";
         $messages['min']        = "O :attribute deve conter no mínimo :min caracteres";
         $messages['max']        = "O :attribute deve conter no mínimo :max caracteres";
+        $messages['mimes']      = "O arquivo deve ser do tipo PDF, JPG ou PNG";
 
         $request->validate($rules,$messages);
         
+        if ($request->filled('nuspOrientador')) $objOrientador->codpes = $request->input('nuspOrientador');
         $objOrientador->nome = $request->input('nomeOrientador');
         $objOrientador->email = $request->input('emailOrientador');
         $objOrientador->telefone = $request->input('telefoneOrientador');
@@ -343,27 +344,27 @@ class OrientadorController extends Controller
         $objOrientador->link_lattes = $request->input('linkLattes');
         $objOrientador->area_atuacao = $request->input('area_atuacao');
 
-        if ($request->file('comprovante_vinculo')->isValid()) {
-            
+        if ($request->file('comprovante_vinculo')) {
             $arquivo = $request->file('comprovante_vinculo');
             $nomeArq = "comprovante_".$request->input('nomeOrientador').".".$arquivo->extension();
+
+            if (!empty($objOrientador->comprovante_vinculo)) {
+                File::delete('upload/orientador/'.$objOrientador->comprovante_vinculo);
+            }
+            $objOrientador->comprovante_vinculo = $nomeArq;
             
             if (!$arquivo->move(public_path('upload/orientador/'),$nomeArq)) {
                 return "<script> alert('O26-Erro ao copiar o arquivo do comprovante.'); 
                                         window.location.assign('".route('home')."');
                     </script>";
-            } else {
-                if (!empty($objOrientador->comprovante_vinculo)) {
-                    File::delete('upload/orientador/'.$objOrientador->comprovante_vinculo);
-                }
-                $objOrientador->comprovante_vinculo = $nomeArq;
             }    
         }
 
         $objOrientador->update();
 
-        if($objOrientador->externo == true) {
+        if($objOrientador->externo == 1) {
             $user = User::where('email',$emailAntigo)->get()->first();
+            $user->codpes = $objOrientador->codpes;
             $user->name = $objOrientador->nome;
             $user->email = $objOrientador->email;
             //$user->password = $objOrientador->password;
