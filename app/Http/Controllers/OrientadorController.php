@@ -96,7 +96,7 @@ class OrientadorController extends Controller
     public function store(Request $request)
     {
         $rules = [];
-        $rules['comprovante_vinculo']= ["file","mimes:application/pdf,application/jpg,application/png"];
+        $rules['comprovante_vinculo']= ["file","mimes:pdf,jpg,png"];
 
         if ($request->input('externo')) {
             if ($request->filled('cpfOrientador') && Orientador::where('CPF',$request->input('cpfOrientador'))->count() > 0 && !auth()->check()) {
