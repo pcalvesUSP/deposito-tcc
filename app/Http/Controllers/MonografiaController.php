@@ -1370,7 +1370,15 @@ class MonografiaController extends Controller
             $monoOrientador->update();
             
             $monografia = Monografia::find($request->input('idTcc'));
-            $monografia->status="AGUARDANDO AVALIACAO";
+            $monografia->status             = "AGUARDANDO AVALIACAO";
+            $monografia->titulo             = $request->input('titulo');
+            $monografia->resumo             = $request->input('resumo');
+            $monografia->introducao         = $request->input('introducao');
+            $monografia->objetivo           = $request->input('objetivo');
+            $monografia->material_metodo    = $request->input('material_metodo');
+            $monografia->resultado_esperado = $request->input('resultado_esperado');
+            $monografia->aspecto_etico      = $request->input('aspecto_etico');
+            $monografia->referencias        = $request->input('referencias');
             $monografia->update();
 
             $aluno = Aluno::where('monografia_id',$request->input('idTcc'))->get();

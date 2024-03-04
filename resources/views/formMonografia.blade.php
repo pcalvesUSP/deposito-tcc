@@ -204,7 +204,7 @@
       <div class="campo">
         <label for="unitermo1">1&ordf; Palavra Chave:<br/><b>Tenha certeza que não existe na lista antes de cadastrar um novo.</b> </label>
         <div style="float:left;">
-        <select name="unitermo1" id="unitermo1" @if ($readonly) tabindex="-1" aria-disabled="1" class="selectReadonly" @endif>
+        <select name="unitermo1" id="unitermo1" @if ($readonly || $aprovOrientador) tabindex="-1" aria-disabled="1" class="selectReadonly" @endif>
             <optgroup label="Palavra Chave 1">
             <option value="">Selecione</option>
             @foreach ($unitermos as $objUnitermos)
@@ -218,7 +218,7 @@
 
         <div style="float:left; margin-left: 5px;">
         <input type="checkbox" id="cadastroUnitermo1" value="1" 
-          @if ($readonly) disabled readonly class="inputReadonly" @endif 
+          @if ($readonly || $aprovOrientador) disabled readonly class="inputReadonly" @endif 
           @if (!empty(old('txtUnitermo1'))) checked @endif> Novo
         </div>
         <div id="txtUnitermo1" style="display:none; float:left; margin-left: 5px;"><input type="text" name="txtUnitermo1" value="{{ old('txtUnitermo1') }}" size="30" maxlength="45"></div>
@@ -229,7 +229,7 @@
       <div class="campo">
         <label for="unitermo2">2&ordf; Palavra Chave:<br/><b>Tenha certeza que não existe na lista antes de cadastrar um novo.</b> </label>
         <div style="float:left;">
-        <select name="unitermo2" id="unitermo2" @if ($readonly) tabindex="-1" aria-disabled="1" class="selectReadonly" @endif>
+        <select name="unitermo2" id="unitermo2" @if ($readonly || $aprovOrientador) tabindex="-1" aria-disabled="1" class="selectReadonly" @endif>
             <optgroup label="Palavra Chave 2">
             <option value="">Selecione</option>
             @foreach ($unitermos as $objUnitermos)
@@ -243,7 +243,7 @@
 
         <div style="float:left; margin-left: 5px;">
         <input type="checkbox" id="cadastroUnitermo2" value="1" 
-          @if ($readonly) disabled readonly class="inputReadonly" @endif 
+          @if ($readonly || $aprovOrientador) disabled readonly class="inputReadonly" @endif 
           @if (!empty(old('txtUnitermo2'))) checked @endif> Novo
         </div>
         <div id="txtUnitermo2" style="display:none; float:left; margin-left: 5px;"><input type="text" name="txtUnitermo2" value="{{ old('txtUnitermo2') }}" size="30" maxlength="45"></div>
@@ -254,7 +254,7 @@
       <div class="campo">
         <label for="unitermo3">3&ordf; Palavra Chave:<br/><b>Tenha certeza que não existe na lista antes de cadastrar um novo.</b></label>
         <div style="float:left;">
-        <select name="unitermo3" id="unitermo3" @if ($readonly) tabindex="-1" aria-disabled="1" class="selectReadonly" @endif>
+        <select name="unitermo3" id="unitermo3" @if ($readonly || $aprovOrientador) tabindex="-1" aria-disabled="1" class="selectReadonly" @endif>
             <optgroup label="Palavra Chave 3">
             <option value="">Selecione</option>
             @foreach ($unitermos as $objUnitermos)
@@ -268,7 +268,7 @@
 
         <div style="float:left; margin-left: 5px;">
         <input type="checkbox" id="cadastroUnitermo3" value="1" 
-          @if ($readonly) disabled readonly class="inputReadonly" @endif 
+          @if ($readonly || $aprovOrientador) disabled readonly class="inputReadonly" @endif 
           @if ( !empty(old('txtUnitermo3'))) checked @endif> Novo
         </div>
         <div id="txtUnitermo3" style="display:none; float:left; margin-left: 5px;"><input type="text" name="txtUnitermo3" value="{{ old('txtUnitermo3') }}" size="30" maxlength="45"></div>
@@ -279,7 +279,7 @@
       <div class="campo">
         <label for="unitermo4">4&ordf; Palavra Chave:<br/><b>Tenha certeza que não existe na lista antes de cadastrar um novo.</b> </label>
         <div style="float:left;">
-        <select name="unitermo4" id="unitermo4" @if ($readonly) tabindex="-1" aria-disabled="1" class="selectReadonly" @endif>
+        <select name="unitermo4" id="unitermo4" @if ($readonly || $aprovOrientador) tabindex="-1" aria-disabled="1" class="selectReadonly" @endif>
             <optgroup label="Palavra Chave 4">
             <option value="">Selecione</option>
             @foreach ($unitermos as $objUnitermos)
@@ -293,7 +293,7 @@
 
         <div style="float:left; margin-left: 5px;">
         <input type="checkbox" id="cadastroUnitermo4" value="1" 
-          @if ($readonly) disabled readonly class="inputReadonly" @endif 
+          @if ($readonly || $aprovOrientador) disabled readonly class="inputReadonly" @endif 
           @if (!empty(old('txtUnitermo4'))) checked @endif> Novo
         </div>
         <div id="txtUnitermo4" style="display:none; float:left; margin-left: 5px;"><input type="text" name="txtUnitermo4" value="{{ old('txtUnitermo4') }}" size="30" maxlength="45"></div>
@@ -303,7 +303,7 @@
       <div class="campo">
         <label for="unitermo5">5&ordf; Palavra Chave:<br/><b>Tenha certeza que não existe na lista antes de cadastrar um novo.</b> </label>
         <div style="float:left;">
-        <select name="unitermo5" id="unitermo5" @if ($readonly) tabindex="-1" aria-disabled="1" class="selectReadonly" @endif>
+        <select name="unitermo5" id="unitermo5" @if ($readonly || $aprovOrientador) tabindex="-1" aria-disabled="1" class="selectReadonly" @endif>
             <optgroup label="Palavra Chave 5">
             <option value="">Selecione</option>
             @foreach ($unitermos as $objUnitermos)
@@ -317,7 +317,7 @@
 
         <div style="float:left; margin-left: 5px;">
         <input type="checkbox" id="cadastroUnitermo5" value="1" 
-          @if ($readonly) disabled readonly class="inputReadonly" @endif 
+          @if ($readonly || $aprovOrientador) disabled readonly class="inputReadonly" @endif 
           @if (!empty(old('txtUnitermo5'))) checked @endif> Novo
         </div>
         <div id="txtUnitermo5" style="display:none; float:left; margin-left: 5px;"><input type="text" name="txtUnitermo5" value="{{ old('txtUnitermo5') }}" size="30" maxlength="45"></div>
@@ -326,7 +326,7 @@
       
       <div class="campo">
       <label for="cod_area_tematica"> Área Temática: </label>
-        <select name="cod_area_tematica" id="cod_area_tematica" @if ($readonly) tabindex="-1" aria-disabled="1" class="selectReadonly" @endif>
+        <select name="cod_area_tematica" id="cod_area_tematica" @if ($readonly || $aprovOrientador) tabindex="-1" aria-disabled="1" class="selectReadonly" @endif>
             <option value="">Selecione</option>
             @foreach ($areas_tematicas as $area)
             <option value="{{ $area->id }}" @if (old('cod_area_tematica') == $area->id || (isset($dadosMonografia->areastematicas_id) && $dadosMonografia->areastematicas_id == $area->id) ) selected @endif> {{ $area->descricao }} </option>

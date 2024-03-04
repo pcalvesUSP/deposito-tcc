@@ -30,7 +30,7 @@ $( document ).ready(function(){
                         $("#dataAberturaUploadTCC").val(data.dataAberturaUploadTCC.substring(8,10)+"/"+data.dataAberturaUploadTCC.substring(5,7)+"/"+data.dataAberturaUploadTCC.substring(0,4));
                         $("#dataFechamentoUploadTCC").val(data.dataFechamentoUploadTCC.substring(8,10)+"/"+data.dataFechamentoUploadTCC.substring(5,7)+"/"+data.dataFechamentoUploadTCC.substring(0,4));
 
-                        if (valor.substring(0,4) != anoAtual && valor.substring(5,6) != semestre) {
+                        /*if (valor.substring(0,4) != anoAtual && valor.substring(5,6) != semestre) {
                             $("#dataInicioAlunos").attr({readonly:true, class:'inputReadonly'});
                             $("#dataFinalAlunos").attr({readonly:true, class:'inputReadonly'});
                             $("#dataInicioDocentes").attr({readonly:true, class:'inputReadonly'});
@@ -48,7 +48,7 @@ $( document ).ready(function(){
                             $("#dataFechamentoAvaliacao").attr({readonly:false, class:''});
                             $("#dataAberturaUploadTCC").attr({readonly:false, class:''});
                             $("#dataFechamentoUploadTCC").attr({readonly:false, class:''});
-                        }
+                        }*/
                     } else {
                         $("#dataInicioAlunos").val("");
                         $("#dataFinalAlunos").val("");

@@ -120,7 +120,7 @@ img {
 .header div {
     display: inline-block;
     left: 10%;
-    top: -35px;
+    top: -20px;
 }
 
 /* Logo */
@@ -128,7 +128,7 @@ img {
 .logo {
     /*height: 75px;
     max-height: 100px;*/
-    width: 100px;
+    width: 300px;
 }
 
 /* Body */
