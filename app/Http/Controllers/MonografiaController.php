@@ -50,7 +50,8 @@ class MonografiaController extends Controller
 
     /**
      * Display a listing of the resource.
-     * Mostra o cadastro da monografia
+     * Mostra o cadastro da monografia para alunos
+     * Mostra os dados da monografia cadastrada para todos os outros usuários do sistema
      *
      * @return \Illuminate\Http\Response
      */
@@ -1136,6 +1137,8 @@ class MonografiaController extends Controller
         $dadosOrientadores = array();
         $ObjMonografias = new Monografia;
         $indicarParecerista = 0;
+        $ano = $ano=='null'?null:$ano;
+        $status = $status=='null'?null:$status;
 
         if ($id_orientador == 0 && auth()->user()->hasRole('orientador') && !auth()->user()->hasRole('graduacao') && !auth()->user()->can('admin')) {
             $Orientador = Orientador::where('email', auth()->user()->email)->get();
@@ -1306,11 +1309,11 @@ class MonografiaController extends Controller
             } 
             if (auth()->user()->hasRole('avaliador') && strpos($_GET['route'],'graduacao') !== false) {
                 if ($dataAtual <= $dadosParam->dataAberturaAvaliacao ) {
-                    $sistema_aberto[$dadosM->id] = "Aguarde abertura do Sistema em ".$dadosParam->dataAberturaDocente->format('d/m/Y'); 
+                    $sistema_aberto[$dadosM->id] = "Aguarde abertura do Sistema em ".$dadosParam->dataAberturaAvaliacao->format('d/m/Y'); 
                 }
 
                 if ($dataAtual > $dadosParam->dataFechamentoAvaliacao ) {
-                    $sistema_aberto[$dadosM->id] = "Sistema fechado em ".$dadosParam->dataFechamentoDocente->format('d/m/Y'); 
+                    $sistema_aberto[$dadosM->id] = "Sistema fechado em ".$dadosParam->dataFechamentoAvaliacao->format('d/m/Y'); 
                 } 
             }
         }
@@ -1337,11 +1340,15 @@ class MonografiaController extends Controller
      */
     public function buscaRegistroMonografia(Request $request) {
 
-        if ($request->filled('filtro'))
-            return $this->listMonografia($request->input('id_orientador'), null, null, $request->input('filtro'));
-        
-        if ($request->filled('filtroStatus')) 
-            return $this->listMonografia($request->input('id_orientador'), null, $request->input('filtroStatus'));
+        if ($request->filled('filtro')) {
+            return redirect()->route('busca.monografia_filtro',['orientador'=>$request->input('id_orientador'),'ano'=>'null','status'=>'null','filtro'=>$request->input('filtro')] );
+            //return $this->listMonografia($request->input('id_orientador'), null, null, $request->input('filtro'));
+        }
+
+        if ($request->filled('filtroStatus')) {
+            return redirect()->route('busca.monografia_filtro',['orientador'=>$request->input('id_orientador'),'ano'=>'null','status'=>$request->input('filtroStatus')] );
+            //return $this->listMonografia($request->input('id_orientador'), null, $request->input('filtroStatus'));
+        }
 
         return redirect()->route('orientador.lista_monografia');
         //return view('cadastro-banca', ['listBanca'=>$listBanca, 'buscaRegistro' => 1, 'filtro' => $request->input('filtro')]);

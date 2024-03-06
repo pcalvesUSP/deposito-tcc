@@ -30,6 +30,7 @@ Route::prefix('alunos')->group(function() {
 
 Route::post('salvarMonografia',[App\Http\Controllers\MonografiaController::class,'store'])->name('salvarMonografia');
 Route::post('buscaMonografia', [App\Http\Controllers\MonografiaController::class,'buscaRegistroMonografia'])->name('busca.monografia');
+Route::get('buscaMonografia/{orientador?}/{ano?}/{status?}/{filtro?}',[App\Http\Controllers\MonografiaController::class,'listMonografia'])->name('busca.monografia_filtro');
 Route::get('comissao/orientador', [App\Http\Controllers\OrientadorController::class,'index'])->name('comissao.orientador');
 Route::get('comissao/lista_monografia/',[App\Http\Controllers\OrientadorController::class,'listarMonografias'])->name('comissao.lista_monografia');
     

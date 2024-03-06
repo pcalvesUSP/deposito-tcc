@@ -186,7 +186,7 @@ class Monografia extends Model
         
         $build->orderBy("monografias.ano", "desc")->orderBy("alunos.nome")->orderBy("monografias.id");
         
-        $listMonografia = $build->distinct()->paginate(30);
+        $listMonografia = $build->distinct()->simplePaginate(30);
 
         return $listMonografia;
     }

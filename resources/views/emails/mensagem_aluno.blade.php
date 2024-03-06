@@ -9,5 +9,6 @@ Acesse o Sistema
 
 <br/>
 Este é um e-mail automático gerado pelo {{ config('app.name') }}<br/>
-Para maiores informações entre em contato com o Serviço de Graduação.
+Para maiores informações entre em contato com a Comissão de TCC FF-USP.<br/>
+<a href="mailto:ctcc.fcf@usp.br">ctcc.fcf@usp.br</a>
 @endcomponent

@@ -13,7 +13,7 @@
                 Andamento:
                 <select name="filtroStatus" id="filtroStatus" @if ($indicarParecerista) disabled @endif>
                     <option value="" selected>Lista de Projetos em Andamento</option>
-                    <option @if(!empty($status) && $status == "AGUARDANDO APROVACAO DO ORIENTADOR") selected @endif  value="AGUARDANDO APROVACAO DO ORIENTADOR">Aguardando aprovação do Orientador</option>
+                    <option @if(!empty($status) && $status == "AGUARDANDO APROVACAO ORIENTADOR") selected @endif  value="AGUARDANDO APROVACAO ORIENTADOR">Aguardando aprovação do Orientador</option>
                     <option @if((!empty($status) && $status == "AGUARDANDO AVALIACAO") || $indicarParecerista) selected @endif  value="AGUARDANDO AVALIACAO">Aguardando Avaliação</option>
                     <option @if(!empty($status) && $status == "AGUARDANDO CORRECAO DO PROJETO") selected @endif value="AGUARDANDO CORRECAO DO PROJETO">Aguardando Correção do Projeto</option>
                     <option @if(!empty($status) && $status == "AGUARDANDO NOTA DO PROJETO") selected @endif value="AGUARDANDO NOTA DO PROJETO">Aguardando Nota do Projeto</option>
@@ -42,7 +42,7 @@
     </tr>
     </thead>
     @if (!empty($filtro))
-        <tr><td class="tableData" colspan="5">Busca por termo: {{ $filtro }}<br/><a href="{{ route('orientador.lista_monografia') }}" >Resetar a busca</a></td></tr>
+        <tr><td class="tableData" colspan="7">Busca por termo: {{ $filtro }}<br/><a href="{{ route('orientador.lista_monografia') }}" >Resetar a busca</a></td></tr>
     @endif
     
     @php
@@ -98,7 +98,7 @@
     @endphp
 @endforeach
 </table>
-    {{ $dadosMonografias->links() }}
+@if(method_exists($dadosMonografias, 'links')) {{ $dadosMonografias->links() }} @endif
 
 <script>
     $( document ).ready(function(){
