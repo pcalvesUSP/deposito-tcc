@@ -2,8 +2,10 @@
 
 @section('content')
   <p>
-  @if (strpos($userLogado,"Aluno") === false) <a href="{{ route('orientador.lista_monografia') }}">Listar Projetos</a> @endif
-  </p>
+  @if (strpos($userLogado,"Orientador") !== false && strpos($_GET['route'],'orientador') !== false) <a href="{{ route('orientador.lista_monografia') }}">Listar Projetos</a> @endif
+  @if (strpos($userLogado,"Comissao") !== false && strpos($_GET['route'],'graduacao') !== false) <a href="{{ route('comissao.lista_monografia') }}">Listar Projetos</a> @endif
+   
+ </p>
 
   <div class="erro" id="mensagem"> {{ $mensagem }} @if ($errors->any()) ERRO NO CADASTRO DO TCC, VERIFIQUE ABAIXO. @endif </div>
   

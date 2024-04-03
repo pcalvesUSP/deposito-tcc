@@ -69,7 +69,7 @@ class MonografiaController extends Controller
         }
         $paramUtilizado = $dadosParam->semestre."-".$dadosParam->ano;
 
-        $dataAtual = date_create('now');
+        $dataAtual = date_create(date('Y-m-d 00:00:00'));
         $semestreAtual = 1;
         if ($dataAtual->format('n') > 6)
             $semestreAtual = 2;
@@ -494,7 +494,7 @@ class MonografiaController extends Controller
         $dadosParam = Parametro::where("ano",date("Y"))->whereNull('codpes')->get();
         if (!$dadosParam->isEmpty()) {
             $dadosParam->dataAberturaDocente = date_create($dadosParam->dataAberturaDocente);
-            $dataAtual = date_create('now');
+            $dataAtual = date_create(date('Y-m-d 00:00:00'));
         }*/
         
         $mensagem = null;
@@ -528,7 +528,7 @@ class MonografiaController extends Controller
             $monografia->ano = date('Y');
 
             //rever parâmetros, devem ser por semestre
-            $dataAtual = date_create('now');
+            $dataAtual = date_create(date('Y-m-d 00:00:00'));
             if ($dataAtual->format('n') <= 6 ) {
                 $monografia->semestre = '1';
             } else {
@@ -800,7 +800,7 @@ class MonografiaController extends Controller
             $messages['pessoaDupla.required'] = "Favor informar o componente do grupo de trabalho.";
         }*/
         $dadosParam = Parametro::getDadosParam();
-        $dataAtual = date_create('now');
+        $dataAtual = date_create(date('Y-m-d 00:00:00'));
 
         $rules['orientador_id']     = "required";
         $rules['curriculo']         = "required";
@@ -825,7 +825,7 @@ class MonografiaController extends Controller
             $objMonografia->status <> "AGUARDANDO CORRECAO DO PROJETO" &&
             auth()->user()->hasRole('aluno')) {
 
-            $rules['path_arq_tcc']  = ["file","required","mimes:application/pdf"];         
+            $rules['path_arq_tcc']  = ["file","required","mimes:pdf"];         
         }
         
         $rules['cod_area_tematica'] = ["required", "exists:areastematicas,id"];
@@ -1279,9 +1279,9 @@ class MonografiaController extends Controller
            
         }
         $dadosMonografias = $Monografias;
-        $dataAtual = date_create('now');
+        $dataAtual = date_create(date('Y-m-d 00:00:00'));
         $sistema_aberto = array();
-        
+
         foreach ($dadosMonografias as $dadosM) {
             $collectionM = Monografia::with(['alunos','orientadores'])->where('id', $dadosM->id)->get();
             $grupoAlunos[$dadosM->id] = $collectionM->first()->alunos()->get();
@@ -1303,9 +1303,9 @@ class MonografiaController extends Controller
                     $sistema_aberto[$dadosM->id] = "Aguarde abertura do Sistema em ".$dadosParam->dataAberturaDocente->format('d/m/Y'); 
                 }
 
-                if ($dataAtual > $dadosParam->dataFechamentoDocente ) {
+                /*if ($dataAtual > $dadosParam->dataFechamentoDocente ) {
                     $sistema_aberto[$dadosM->id] = "Sistema fechado em ".$dadosParam->dataFechamentoDocente->format('d/m/Y'); 
-                } 
+                }*/
             } 
             if (auth()->user()->hasRole('avaliador') && strpos($_GET['route'],'graduacao') !== false) {
                 if ($dataAtual <= $dadosParam->dataAberturaAvaliacao ) {
@@ -1421,7 +1421,7 @@ class MonografiaController extends Controller
      * @return \Illuminate\Http\Response
      */
     public function indicaParecerista(Request $request) {
-        $rule     = [];
+        $rules    = [];
         $messages = [];
         $rules['idTcc']       = ["required","exists:monografias,id"];
         $rules['parecerista'] = ["required","exists:comissoes,id"];
@@ -1469,7 +1469,10 @@ class MonografiaController extends Controller
             $msg = "O Projeto ainda não foi aprovado pelo Orientador.";
         }
 
-        return redirect()->route('orientador.edicao',['idMono'=>$request->input('idTcc'), 'msg' => $msg]);
+        if(auth()->user()->can('userComissao') && strpos($_GET['route'],'graduacao') !== false) {
+            return redirect()->route('comissao.lista_monografia');
+        }
+        return redirect()->route('orientador.lista_monografia',['idMono'=>$request->input('idTcc'), 'msg' => $msg]);      
 
     }
 

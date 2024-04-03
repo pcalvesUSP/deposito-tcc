@@ -174,8 +174,8 @@ class OrientadorController extends Controller
         
         if ($request->file('comprovante_vinculo')->isValid()) {
             $arquivo = $request->file('comprovante_vinculo');
-            $nomesOrient = explode(" ",$request->input('nomeOrientador'));
-            $nomeArq = "comprovante_".$nomesOrient[0].$nomesOrient[1].$nomesOrient[2].".".$arquivo->extension();
+
+            $nomeArq = "comprovante_".str_replace(" ","_",$request->input('nomeOrientador')).".".$arquivo->extension();
 
             if (!$arquivo->move(public_path('upload/orientador'),$nomeArq)) {
                 if (!auth()->check()) {
@@ -224,10 +224,10 @@ class OrientadorController extends Controller
                 ";
 
                 $Presidente = Comissao::where('papel','COORDENADOR')
-                                      ->where('dtInicioMandato','>=',date('Y-m-d'))
-                                      ->where('dtFimMandato','<=',date('Y-m-d'))
+                                      ->where('dtInicioMandato','<=',date('Y-m-d'))
+                                      ->where('dtFimMandato','>=',date('Y-m-d'))
                                       ->get();
-
+                
                 EnviarEmailOrientador::dispatch(['email'        => $Presidente->first()->email
                                                 ,'textoMsg'     => $msgComissao
                                                 ,'assuntoMsg'   => "Cadastro de novo orientador"
