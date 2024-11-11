@@ -33,9 +33,9 @@
     <div class="row" style="height:100px;">
         <div class="col-md-12">
             <a class="skin_logo" href="{{ env("APP_URL") }}">
-                <img src="{{ asset('/vendor/laravel-usp-theme/fcf/images/LOGOFcf_nome.png') }}" alt="Logo da Faculdade de Ciências Farmacêuticas da USP" />
+                <img src="{{ asset('/vendor/laravel-usp-theme/skins/fcf/images/LOGOFcf_nome.png') }}" alt="Logo da Faculdade de Ciências Farmacêuticas da USP" />
             </a>
-            <span class="skin_texto" style="text-align:-webkit-right;font-size:30px;font-weight:bold;right:10%;position:relative;width:100%;height:10px;display:block;bottom:60%;">
+            <span class="skin_texto" style="text-align:right;font-size:30px;font-weight:bold;right:10%;position:relative;width:100%;height:10px;display:block;bottom:60%;">
                 {{ env("APP_NAME") }}
                 
             </span>

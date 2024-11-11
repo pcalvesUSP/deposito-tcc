@@ -4,8 +4,8 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\File;
-use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Support\Facades\DB;
+//use Illuminate\Database\Eloquent\Builder;
+//use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Redirect;
 
 use App\Models\Monografia;
@@ -78,7 +78,6 @@ class MonografiaController extends Controller
 
         $listaParam = Parametro::select('id','ano','semestre')->whereNull('codpes')->orderBy('ano')->orderBy('semestre')->distinct()->get();
         
-
         $uploadTcc = 0;
         $readonly = 1;
         $publicar = 0;
@@ -129,11 +128,12 @@ class MonografiaController extends Controller
         $dadosDefesa = Defesa::where("monografia_id",$monografia_id)->get();
         
         if ($monografia_id > 0) {
-            if (empty($ano)) {
+            $dadosMonografia = Monografia::with(['alunos','orientadores','unitermos'])->orderBy('ano')->where('id',$monografia_id)->get();
+            /*if (empty($ano)) {
                 $dadosMonografia = Monografia::with(['alunos','orientadores','unitermos'])->orderBy('ano')->where('id',$monografia_id)->get();
             } else {
                 $dadosMonografia = Monografia::with(['alunos','orientadores','unitermos'])->orderBy('ano')->where('id',$monografia_id)->where('ano',$ano)->get();
-            }
+            }*/
 
             if ($dadosMonografia->isEmpty()) {
                 return "<script> alert('M7-Erro ao informar monografia. Entre em contato com a Graduação'); 
@@ -378,8 +378,10 @@ class MonografiaController extends Controller
 
             if (!$dadosDefesa->isEmpty()) {
                 if (is_null($dadosDefesa->first()->aprovacao_orientador)) {
+                    if (date_create($dadosDefesa->first()->dataEscolhida) <= data_create('now')) {
+                        $validacaoTcc = 1;
+                    }
                     $aprovaBanca = 1;
-                    $validacaoTcc = 0;
                 } elseif (!$dadosDefesa->first()->aprovacao_orientador) {
                     $uploadTcc = 1;
                 }
@@ -462,7 +464,6 @@ class MonografiaController extends Controller
         }*/
 
         $rules['orientador_id']     = "required";
-        $rules['curriculo']         = "required";
         $rules['titulo']            = ["required","min:3","max:255"];
         $rules['resumo']            = ["required","min:3",new CountWord1000];
         $rules['introducao']        = ["required","min:3","max:65000"];
@@ -470,47 +471,31 @@ class MonografiaController extends Controller
         $rules['material_metodo']   = ["required","min:3",new CountWord1000];
         $rules['resultado_esperado']= ["required","min:3",new CountWord1000];
         $rules['aspecto_etico']     = ["required","min:3",new CountWord1000];
-        if (!$request->filled('txtUnitermo1'))
-            $rules['unitermo1']     = ["required", "exists:unitermos,id"];
-        if (!$request->filled('txtUnitermo2')) 
-            $rules['unitermo2']     = ["required", "exists:unitermos,id"];
-        if (!$request->filled('txtUnitermo3'))
-            $rules['unitermo3']     = ["required", "exists:unitermos,id"];
-        $rules['cod_area_tematica'] = ["required", "exists:areastematicas,id"];
+        $rules['unitermo1']         = ["filled", "exists:unitermos,id"];
+        $rules['txtUnitermo1']      = ["filled"];
+        $rules['unitermo2']         = ["filled", "exists:unitermos,id"];
+        $rules['txtUnitermo2']      = ["filled"];
+        $rules['unitermo3']         = ["filled", "exists:unitermos,id"];
+        $rules['txtUnitermo3']      = ["filled"];
         
         $messages['required']                 = "Favor informar o :attribute da monografia.";
         $messages['min']                      = "O :attribute deve conter no mínimo :min caracteres";
         $messages['max']                      = "O :attribute deve conter no máximo :max caracteres";
         $messages['cod_area_tematica.exists'] = "A área temática deve estar previamente cadastrada no sistema";
         $messages['exists']                   = "O :attribute deve estar previamente cadastrado no sistema.";
-        //$messages['template_apres.file']      = "O arquivo da monografia não é válido";
-        //$messages['template_apres.required']  = "O arquivo da monografia deve ser informado.";
+        $messages['unitermo1.filled']         = "Favor informar a 1ª palavra chave";
+        $messages['unitermo2.filled']         = "Favor informar a 2ª palavra chave";
+        $messages['unitermo3.filled']         = "Favor informar a 3ª palavra chave";
+        $messages['filled']                   = "Favor informar o campo da palavra chave a ser cadastrada";
 
-        $request->validate($rules,$messages);
-
-        /*$arquivo = $request->file('template_apres');
-        $arquivo->move(public_path('upload'),$arquivo->getClientOriginalName());
-
-        $dadosParam = Parametro::where("ano",date("Y"))->whereNull('codpes')->get();
-        if (!$dadosParam->isEmpty()) {
-            $dadosParam->dataAberturaDocente = date_create($dadosParam->dataAberturaDocente);
-            $dataAtual = date_create(date('Y-m-d 00:00:00'));
-        }*/
-        
+        $request->validate($rules,$messages);        
         $mensagem = null;
 
         try {
 
             $dadosParam = Parametro::getDadosParam();
-
             $dadosCurso = Graduacao::obterCursoAtivo(auth()->user()->codpes);
             //Array (codpes, nompes, codcur, nomcur, codhab, nomhab, dtainivin, codcurgrd)
-
-            if ($dadosCurso['codcurgrd'] != $request->input('curriculo')) {
-                return Redirect::back()
-                                ->withInput()
-                                ->withErrors(['curruculo'=>'O código do currículo cadastrado não bate com o Jupiter. Favor verificar.']);
-            }
 
             $monografia = new Monografia();
             $monografia->status            = 'AGUARDANDO APROVACAO ORIENTADOR';
@@ -803,7 +788,6 @@ class MonografiaController extends Controller
         $dataAtual = date_create(date('Y-m-d 00:00:00'));
 
         $rules['orientador_id']     = "required";
-        $rules['curriculo']         = "required";
         $rules['titulo']            = ["required","min:3","max:255"];
         $rules['resumo']            = ["required","min:3",new CountWord1000];
         $rules['introducao']        = ["required","min:3","max:65000"];
@@ -817,8 +801,9 @@ class MonografiaController extends Controller
             $rules['unitermo2']     = ["required", "exists:unitermos,id"];
         if (!$request->filled('txtUnitermo3'))
             $rules['unitermo3']     = ["required", "exists:unitermos,id"];
-        //$rules['unitermo4']         = ["exists:unitermos,id"];
-        //$rules['unitermo5']         = ["exists:unitermos,id"];
+        $rules['unitermo4']         = ["filled","exists:unitermos,id"];
+        $rules['unitermo5']         = ["filled","exists:unitermos,id"];
+
         if ($dataAtual >= $dadosParam->dataAberturaUploadTCC && 
             $dataAtual <= $dadosParam->dataFechamentoUploadTCC &&
             empty($objMonografia->path_arq_tcc) &&
@@ -836,11 +821,13 @@ class MonografiaController extends Controller
         $messages['cod_area_tematica.exists'] = "A área temática deve estar previamente cadastrada no sistema";
         $messages['path_arq_tcc.file']        = "O arquivo da monografia informado não é válido";
         $messages['path_arq_tcc.mimes']       = "O arquivo deve ser do tipo PDF";
+        $messages['filled']                   = "Favor informar o :attribute da monografia.";
 
         $request->validate($rules,$messages);
 
-        if (isset($rules['path_arq_tcc']) && $request->hasFile('path_arq_tcc') && $request->file('path_arq_tcc')->isValid()) {
+        if (isset($rules['path_arq_tcc'])) {
             $arquivo = $request->file('path_arq_tcc');
+            $objMonografia->path_arq_tcc = $arquivo->store('upload',$arquivo->getClientOriginalName());
 
             if (!$arquivo->move(public_path('upload'),$arquivo->getClientOriginalName())) {
                 return "<script> alert('M26-Erro ao copiar o arquivo.'); 
@@ -848,17 +835,9 @@ class MonografiaController extends Controller
                     </script>";
             }
             $nomeArq = $arquivo->getClientOriginalName();
-        } else {
-            if (isset($rules['path_arq_tcc'])) {
-                return "<script> alert('M16-Erro de upload de arquivo'); 
-                                       window.location.assign('".route('home')."');
-                    </script>";
-            }
-            $nomeArq = null;
         }
         
         try {
-            $objMonografia->curriculo         = $request->input('curriculo');
             $objMonografia->titulo            = $request->input('titulo');
             $objMonografia->resumo            = $request->input('resumo');
             $objMonografia->introducao        = $request->input('introducao');
@@ -877,8 +856,10 @@ class MonografiaController extends Controller
             }
             $objMonografia->publicar = ($request->has('publicar'))?$request->input('publicar'):null;
             
-            if (isset($rules['path_arq_tcc']))
+            if (isset($rules['path_arq_tcc'])) {
                 $objMonografia->status = "AGUARDANDO VALIDACAO DE BANCA";
+                $mensagem.= " TCC anexado com sucesso, aguarde a validação da banca";
+            }
 
             $objMonografia->update();
 
@@ -915,10 +896,7 @@ class MonografiaController extends Controller
             $noDelete  = [0];
             $unitermos = array();
 
-            if (empty($unitermo1->id)) {
-                $mensagem.= "A Palavra Chave 1 não foi alterado pois o selecionado foi excluído das opções do sistema.";
-                $noDelete[] = $request->input('unitermo1');
-            } else {
+            if (!empty($unitermo1->id)) {
                 if ($unitermo1->unitermo <> $unitermo2->unitermo &&
                     $unitermo1->unitermo <> $unitermo3->unitermo  
                 ) {
@@ -951,10 +929,7 @@ class MonografiaController extends Controller
                     return Redirect::back()->withErrors(['unitermo2'=>'O campo Palavra-chave 2 não pode ser repetido']);
                 }
             }
-            if (empty($unitermo3->id)) {
-                $mensagem.= "A Palavra Chave 3 não foi alterado pois o selecionado foi excluído das opções do sistema.";
-                $noDelete[] = $request->input('unitermo3');
-            } else {
+            if (!empty($unitermo3->id)) {
                 if ($unitermo3->unitermo <> $unitermo1->unitermo &&
                     $unitermo3->unitermo <> $unitermo2->unitermo  
                 ) {
@@ -969,10 +944,7 @@ class MonografiaController extends Controller
                     return Redirect::back()->withErrors(['unitermo3'=>'O campo Palavra-chave 3 não pode ser repetido']);
                 }
             }
-            if (!$request->filled('unitermo4')) {
-                $mensagem.= "A Palavra Chave 4 não foi alterado pois o selecionado foi excluído das opções do sistema.";
-                $noDelete[] = $request->input('unitermo4');
-            } elseif (!empty($unitermo4->id)) {
+            if (!empty($unitermo4->id)) {
                 if ($unitermo4->unitermo <> $unitermo1->unitermo &&
                     $unitermo4->unitermo <> $unitermo2->unitermo &&
                     $unitermo4->unitermo <> $unitermo3->unitermo) {
@@ -983,10 +955,7 @@ class MonografiaController extends Controller
                     }
                 }
             }
-            if (!$request->filled('unitermo5')) {
-                $mensagem.= "A Palavra Chave 5 não foi alterado pois o selecionado foi excluído das opções do sistema.";
-                $noDelete[] = $request->input('unitermo5');
-            } elseif (!empty($unitermo5->id)) {
+            if (!empty($unitermo5->id)) {
                 if ($unitermo5->unitermo <> $unitermo1->unitermo &&
                     $unitermo5->unitermo <> $unitermo2->unitermo &&
                     $unitermo5->unitermo <> $unitermo3->unitermo) {
@@ -996,7 +965,6 @@ class MonografiaController extends Controller
                         $unitermos[] = $unitermo5;
                     }
                 }
-                
             }
 
             $numExcluidos = MonoUnitermos::excluirRegistroByMonografia($objMonografia->id, []);
@@ -1057,19 +1025,19 @@ class MonografiaController extends Controller
                                                     ,'nome'         => $orientadores->nome 
                                                     ]);
                 }
-                
+                $mensagem.= " Correção Efetuada";
             } else {
-                $mensagem = "Monografia corrigida";
+                $mensagem.= "Monografia corrigida";
             }
             
-        } catch (Exception $e) {
+        } catch (\Exception $e) {
             $mensagem = "Erro ao Corrigir a Monografia. ".$e->message;
         }     
         
         print "<script>alert('".$mensagem."'); </script>";
 
         if (auth()->user()->hasRole('aluno')) {
-            return redirect(route('alunos.index'));
+            return redirect(route('alunos.index',['monografiaId'=>$objMonografia->id]));
         } else
             return redirect(route('orientador.edicao',['idMono'=>$id]));
     }
@@ -1116,15 +1084,8 @@ class MonografiaController extends Controller
      */
     public function listMonografia(int $id_orientador = 0, $ano = null, $status= null, $filtro=null) {
         
-        if (!auth()->user()->hasRole('orientador') && 
-            !auth()->user()->hasRole('graduacao') && 
-            !auth()->user()->hasRole('avaliador') &&
-            !auth()->user()->can('admin')) {
-            return "<script> alert('M7-Você não tem acesso a esta parte do Sistema.'); 
-                                window.location.assign('".route('home')."');
-                    </script>";
-        }
-        
+        $this->authorize('listar_monografia',auth()->user());
+
         $userLogado = null;
         $userLogado.= (auth()->user()->hasRole('orientador'))?"Orientador,":$userLogado;
         $userLogado.= (auth()->user()->hasRole('graduacao'))?"Graduacao,":$userLogado;
@@ -1140,7 +1101,7 @@ class MonografiaController extends Controller
         $ano = $ano=='null'?null:$ano;
         $status = $status=='null'?null:$status;
 
-        if ($id_orientador == 0 && auth()->user()->hasRole('orientador') && !auth()->user()->hasRole('graduacao') && !auth()->user()->can('admin')) {
+        if ($id_orientador == 0 && auth()->user()->hasRole('orientador')) {
             $Orientador = Orientador::where('email', auth()->user()->email)->get();
             if ($Orientador->isEmpty()) {
                 return "<script> alert('M40-Você não tem permissão para acessar essa área do sistema.'); 
@@ -1182,6 +1143,7 @@ class MonografiaController extends Controller
                                 ->where('dtInicioMandato','<=', date_create('now')->format('Y-m-d'))
                                 ->where('dtFimMandato', '>=', date_create('now')->format('Y-m-d'))
                                 ->get();
+
             if ($comissao->isEmpty()) {
                 return "<script> alert('M41-Você não tem permissão para acessar essa área do sistema.'); 
                             window.location.assign('".route('home')."');
@@ -1267,11 +1229,11 @@ class MonografiaController extends Controller
                 if (empty($status)) {
                     $Monografias = Monografia::with(['alunos','orientadores'])
                                              ->where('status','<>','CONCLUIDO')
-                                             ->orderBy('ano','desc')->paginate(30);
+                                             ->orderBy('ano','desc')->get();
                 } else {
                     $Monografias = Monografia::with(['alunos','orientadores'])
                                              ->where('status',$status)
-                                             ->orderBy('ano','desc')->paginate(30);
+                                             ->orderBy('ano','desc')->get();
                 }
             } else {
                 $Monografias = $ObjMonografias->getMonografiaByFiltro($filtro,0,0,$status);
@@ -1362,12 +1324,7 @@ class MonografiaController extends Controller
      */
     public function aprovaProjeto (Request $request) {
 
-        if (!auth()->user()->hasRole('orientador') &&
-            !auth()->user()->can('admin')) {
-            return "<script> alert('M27-Você não tem acesso a esta parte do Sistema.'); 
-                                window.location.assign('".route('home')."');
-                    </script>";
-        }
+        $this->authorize('is_orientador',auth()->user());
 
         $monoOrientadores = MonoOrientadores::where('monografia_id',$request->input('idTcc'))->get();
         $monoOrientador = MonoOrientadores::find($monoOrientadores->first()->id);
@@ -1396,8 +1353,8 @@ class MonografiaController extends Controller
             ";
 
             $Presidente = Comissao::where('papel','COORDENADOR')
-                                  ->where('dtInicioMandato','<=',date('Y-m-d'))
-                                  ->where('dtFimMandato','>=',date('Y-m-d'))
+                                  ->whereDate('dtInicioMandato','<=',date('Y-m-d'))
+                                  ->whereDate('dtFimMandato','>=',date('Y-m-d'))
                                   ->get();
 
             EnviarEmailAluno::dispatch(['email'   => $Presidente->first()->email
@@ -1421,8 +1378,9 @@ class MonografiaController extends Controller
      * @return \Illuminate\Http\Response
      */
     public function indicaParecerista(Request $request) {
-        $rules    = [];
-        $messages = [];
+
+        $this->authorize('presidente',auth()->user());
+
         $rules['idTcc']       = ["required","exists:monografias,id"];
         $rules['parecerista'] = ["required","exists:comissoes,id"];
         $messages['required'] = "Favor informar o :attribute do TCC.";
@@ -1483,6 +1441,8 @@ class MonografiaController extends Controller
      * @return \Illuminate\Http\Response
      */
     public function validaDefesa(Request $request) {
+
+        $this->authorize('is_comissao',auth()->user());
 
         if ($request->filled('cadData')) {
             $rule['txtData'] = ['required', new VerificaDatas()];
@@ -1564,6 +1524,8 @@ class MonografiaController extends Controller
      */
     public function alteraDataDefesa(Request $request) {
 
+        $this->autorize('is_comissao',auth()->user());
+        
         $rule['txtData'] = ['required', new VerificaDatas()];
         $rule['txtHora'] = ['required'];
 

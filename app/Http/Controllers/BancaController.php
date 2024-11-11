@@ -57,24 +57,34 @@ class BancaController extends Controller
         $semestre = $request->input('filtro');
         if (strpos($request->input('filtro'),"-")) {
             $arr = explode("-",$request->input('filtro'));
-            $semestre = $arr[0];
-            $ano = $arr[1];
+            if (count($arr) > 0) 
+            {
+                $semestre = $arr[0];
+                $ano = $arr[1];
+            }
         }
-        
-        $listBanca = Banca::where('nome','like','%'.$request->input('filtro').'%')
-                          ->orWhere('ano', 'like', "%$ano%")
-                          ->orWhere('codpes','like','%'.$request->input('filtro').'%')
-                          ->orWhere('email','like','%'.$request->input('filtro').'%')
-                          ->orWhere(function ($query) use ($semestre) {
-                                        $query->whereExists(function ($q) use ($semestre) {
-                                                    $q->select('id')
-                                                        ->from('monografias')
-                                                        ->whereColumn('bancas.monografia_id','monografias.id')
-                                                        ->where('semestre', $semestre); 
-                                                });
-                                    })   
-                          ->orderBy('ano','desc')
-                          ->orderBy('nome')->get();
+
+        if (is_numeric($ano) && is_numeric($semestre)) {
+            $listBanca = Banca::where('nome','like','%'.$request->input('filtro').'%')
+                            ->orWhere('email','like','%'.$request->input('filtro').'%')
+                            ->orWhere('codpes','like','%'.$request->input('filtro').'%')
+                            ->orWhere(function ($query) use ($semestre) {
+                                $query->whereExists(function ($q) use ($semestre) {
+                                            $q->select('id')
+                                                ->from('monografias')
+                                                ->whereColumn('bancas.monografia_id','monografias.id')
+                                                ->where('semestre', $semestre); 
+                                        });
+                            })
+                            ->orWhere('ano', 'like', "%$ano%")
+                            ->orderBy('ano','desc')->orderBy('nome')->paginate(30);
+
+        } else {
+            $listBanca = Banca::where('nome','like','%'.$request->input('filtro').'%')
+                            ->orWhere('email','like','%'.$request->input('filtro').'%')
+                            ->orWhere('codpes','like','%'.$request->input('filtro').'%')
+                            ->orderBy('ano','desc')->orderBy('nome')->paginate(30);
+        }
 
         if ($listBanca->isEmpty()) {
             $listBanca[] = new Banca;

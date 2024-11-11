@@ -21,6 +21,9 @@ $( document ).ready(function(){
                     alert("Sistema em Manutenção, tente novamente mais tarde");
                 } else {
                     if (data.dataAberturaDiscente.length > 0) {
+                        $("#id_parametro").val(data.id);
+                        $('#metodo').html('<input type="hidden" name="_method" value="PUT">');
+                        $('#formParametro').attr('action', 'graduacao/administracao/'+$("#id_parametro").val());
                         $("#dataInicioAlunos").val(data.dataAberturaDiscente.substring(8,10)+"/"+data.dataAberturaDiscente.substring(5,7)+"/"+data.dataAberturaDiscente.substring(0,4));
                         $("#dataFinalAlunos").val(data.dataFechamentoDiscente.substring(8,10)+"/"+data.dataFechamentoDiscente.substring(5,7)+"/"+data.dataFechamentoDiscente.substring(0,4));
                         $("#dataInicioDocentes").val(data.dataAberturaDocente.substring(8,10)+"/"+data.dataAberturaDocente.substring(5,7)+"/"+data.dataAberturaDocente.substring(0,4));
