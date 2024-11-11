@@ -27,7 +27,7 @@
     <tr>
         <td style="width:9.09%;" class="tableData">{{ $monografia->alunos->first()->nome }}</td>
         <td style="width:9.09%;" class="tableData">{{ $monografia->alunos->first()->id }}</td>            
-        <td style="width:9.09%;" class="tableData">{{ $monografia->emailAluno }}</td>
+        <td style="width:9.09%;" class="tableData">{{ $emailAluno }}</td>
         <td style="width:3.09%;" class="tableData">S</td>
         <td style="width:9.09%;" class="tableData">{{ $monografia->orientadores->first()->nome }}</td>
         <td style="width:9.09%;" class="tableData">{{ $monografia->orientadores->first()->email}}</td>

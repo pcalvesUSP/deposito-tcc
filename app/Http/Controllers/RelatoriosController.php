@@ -101,19 +101,18 @@ class RelatoriosController extends Controller
      */
     public function bancasSugeridas(Request $request) {
         $monografias = Monografia::with(['bancas','alunos','orientadores','defesas'])
-                                 ->where('semestre',$request->input('semestre_banca'))
                                  ->where('ano',$request->input('ano_banca'))
+                                 ->where('semestre',$request->input('semestre_banca'))
                                  ->get();
 
         if ($monografias->isEmpty()) {
             return '<script>alert("Não existem registros para este ano/semestre."); window.location="'.route('declaracao').'";</script>';
         }
 
-        foreach ($monografias as $key=>$monografia) {
-            $monografias[$key]->emailAluno = Pessoa::email($monografia->alunos->first()->id);
-        }
+        $emailAluno = Pessoa::emailusp($monografias->first()->alunos->first()->id);
 
-        return view('relatorios.bancas-sugeridas',['listMonografia' => $monografias
+        return view('relatorios.bancas-sugeridas',['listMonografia' =>$monografias
+                                                  ,'emailAluno'     =>$emailAluno
                                                   ,'semestre'       => $request->input('semestre_banca')
                                                   ,'ano'            => $request->input('ano_banca')
                                                   ]);
@@ -181,7 +180,7 @@ class RelatoriosController extends Controller
                                 ->get();
 
         if ($monografia->isEmpty()) {
-            return "<script>alert('Erro na busca de dados'); window.locatio.assign('".route('declaracao')."'); </script>";
+            return "<script>alert('Erro na busca de dados'); window.locatio.assign('".route('declaracao')."'); ";
         }
 
         $monografia = $monografia->first();
@@ -201,11 +200,10 @@ class RelatoriosController extends Controller
                         ,'data_defesa'      => $dataDefesa->format('d/m/Y')
                         ,'hora_defesa'      => $dataDefesa->format('H:i')
                         ,'local'            => 'SALA GOOGLE MEET'
-                        ,'media'            => number_format($monografia->notas->first()->nota,2,',')
+                        ,'media'            => $monografia->notas->first()->nota
                         ,'frequencia'       => $monografia->notas->first()->frequencia."%"
                         ,'resultado'        => $resultado
-                        ,'publica'          => $monografia->publicar
-                        ];
+                        ,'publica'          => $request->input('publicar')];
 
         foreach($monografia->bancas as $key=>$objBanca) {
             if ($key == 0) {

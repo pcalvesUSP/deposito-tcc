@@ -20,8 +20,8 @@ class MonografiasBancasExport implements FromCollection, WithHeadings, WithMappi
         $semestre = substr($_GET['route'],strlen($_GET['route'])-1,1);
         
         return Monografia::with(['bancas','alunos','orientadores','defesas'])
-                         ->where('semestre',$semestre)
                          ->where('ano',$ano)
+                         ->where('semestre',$semestre)
                          ->whereRelation('defesas','dataEscolhida', null)
                          ->get();
     }
@@ -53,7 +53,7 @@ class MonografiasBancasExport implements FromCollection, WithHeadings, WithMappi
     public function map($linha):array {
         $campos = array();
         
-        $emailAluno = Pessoa::email($linha->alunos->first()->id);
+        $emailAluno = Pessoa::emailusp($linha->alunos->first()->id);
         
         $campos[] = $linha->alunos->first()->nome;
         $campos[] = $linha->alunos->first()->id;

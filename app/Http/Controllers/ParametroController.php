@@ -171,14 +171,11 @@ class ParametroController extends Controller
                  ,"dataFechamentoAvaliacao"=> ["required","date_format:d/m/Y"]
                  ,"dataAberturaUploadTCC"  => ["required","date_format:d/m/Y"]
                  ,"dataFechamentoUploadTCC"=> ["required","date_format:d/m/Y"]
-                 ,"semestreAno"            => ["required"]
                  ];
         
         $mensagens = ["required" => "O campo :attribute é obrigatório"];
         
         $request->validate($rules,$mensagens);
-
-        $semAno = explode('-',$request->input('semestreAno'));
 
         $dtIniAlunos    = explode("/",$request->input('dataInicioAlunos'));
         $dtFimAlunos    = explode("/",$request->input('dataFinalAlunos'));
@@ -198,8 +195,6 @@ class ParametroController extends Controller
         $objParametro->dataFechamentoAvaliacao  = $dtFechaAval[2]."/".$dtFechaAval[1]."/".$dtFechaAval[0];
         $objParametro->dataAberturaUploadTCC    = $dtIniUpTCC[2]."/".$dtIniUpTCC[1]."/".$dtIniUpTCC[0];
         $objParametro->dataFechamentoUploadTCC  = $dtFimUpTCC[2]."/".$dtFimUpTCC[1]."/".$dtFimUpTCC[0];
-        $objParametro->ano                      = $semAno[0];
-        $objParametro->semestre                 = $semAno[1];
         if ($request->filled('numUSP'))
             $objParametro->codpes = $request->input('numUSP');
 

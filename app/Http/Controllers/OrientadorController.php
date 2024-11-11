@@ -768,7 +768,9 @@ class OrientadorController extends Controller
             
             $notaProjeto->tipo_nota     = 'PROJETO';
             $notaProjeto->frequencia    = ($request->input('projeto_freq') >100) ? 100 : $request->input('projeto_freq');
-            $notaProjeto->nota          = str_replace(",",".",$request->input('projeto_nota'));
+            $notaProjeto->nota          = is_float($request->input('projeto_nota'))?str_replace(",",".",$request->input('projeto_nota')):$request->input('projeto_nota');
+
+            $notaProjeto->nota = ( $notaProjeto->nota > 10)? 10 : $notaProjeto->nota;
 
             if ($notaProjeto->save()) {
                 $monografia->status = "AGUARDANDO ARQUIVO TCC";
@@ -822,7 +824,9 @@ class OrientadorController extends Controller
             
             $notaProjeto->tipo_nota     = 'TCC';
             $notaProjeto->frequencia    = $request->input('tcc_freq');
-            $notaProjeto->nota          = str_replace(",",".",$request->input('tcc_nota'));
+            $notaProjeto->nota          = is_float($request->input('tcc_nota'))?str_replace(",",".",$request->input('tcc_nota')):$request->input('tcc_nota');
+
+            $notaProjeto->nota = ($notaProjeto->nota > 10) ? 10 : $notaProjeto->nota;
 
             if ($notaProjeto->save()) {
                 $monografia->status = "CONCLUIDO";

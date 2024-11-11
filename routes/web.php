@@ -17,7 +17,6 @@ use App\Http\Controllers\ConfigInicial;
 Route::get('/',[App\Http\Controllers\HomeController::class,'index']);
 Route::get('/home',[App\Http\Controllers\HomeController::class,'index'])->name('home');
 
-Route::get('login/index',function() { return view('login-index'); })->name('login.index');
 Route::get('loginExterno',[App\Http\Controllers\LoginExtController::class,'index'])->name('login.externo');
 Route::post('loginExterno',[App\Http\Controllers\LoginExtController::class,'autenticar'])->name('login.externo');
 

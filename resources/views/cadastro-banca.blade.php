@@ -49,7 +49,6 @@
     @endforeach
     
 </table>
-{{ $listBanca->links() }}
 
 <script src="js/cadastroBanca.js"></script>
 <script>

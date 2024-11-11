@@ -15,7 +15,7 @@ if (!empty($dadosDefesa->first()->dataEscolhida)) {
 @endif
 
 <p><b>Composição da Banca</b></p>
-@if ($dadosMonografia->status == "AGUARDANDO DEFESA" && date_create($dadosDefesa->first()->dataEscolhida) <= date_create('now') && $dadosMonografia->orientadores->first()->email == auth()->user()->email)
+@if ($dadosMonografia->status == "AGUARDANDO DEFESA" && $dadosDefesa->first()->dataEscolhida <= date_create('now') && $dadosMonografia->orientadores->first()->codpes == auth()->user()->codpes)
 <form id="formValDefesa" action="{{ route('graduacao.validaDefesa') }}" method="post">
     @csrf
     <label style="background-color: #9b51e0; color:white; font-weight: bold; width: 100%; text-align: center;">Selecione abaixo as pessoas que participaram da Banca:</label>
@@ -23,7 +23,7 @@ if (!empty($dadosDefesa->first()->dataEscolhida)) {
 @endif
 @foreach($dadosBanca as $key=>$mBanca)
 <p>
-@if ($dadosMonografia->status == "AGUARDANDO DEFESA" && $dadosDefesa->first()->dataEscolhida <= date_create('now') && $dadosMonografia->orientadores->first()->email == auth()->user()->email) 
+@if ($dadosMonografia->status == "AGUARDANDO DEFESA" && $dadosDefesa->first()->dataEscolhida <= date_create('now') && $dadosMonografia->orientadores->first()->codpes == auth()->user()->codpes) 
 <input type="checkbox" id="{{ $mBanca->papel."_".$key }}" name="membro[]" value="{{ $mBanca->id }}">
 @endif
 {{ ($mBanca->papel=="MEMBRO")?$key++."º":"" }} {{$mBanca->papel}}: {{ $mBanca->nome }}
@@ -33,7 +33,7 @@ if (!empty($dadosDefesa->first()->dataEscolhida)) {
 </p>
 @endforeach
 <div style="color:red;">{{$errors->any() ? $errors->first('msg'):null}}</div>
-@if ($dadosMonografia->status == "AGUARDANDO DEFESA" && $dadosDefesa->first()->dataEscolhida <= date_create('now') && $dadosMonografia->orientadores->first()->email == auth()->user()->email)
+@if ($dadosMonografia->status == "AGUARDANDO DEFESA" && $dadosDefesa->first()->dataEscolhida <= date_create('now') && $dadosMonografia->orientadores->first()->codpes == auth()->user()->codpes)
     <p><input type="submit" id="validarDefesa" value="Validar Defesa"></p>
 </form>
 @endif

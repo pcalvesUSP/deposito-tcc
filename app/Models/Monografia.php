@@ -177,8 +177,8 @@ class Monografia extends Model
         if (strlen($filtro) > 4) {
             if (strpos($filtro,"-") !== false) {
                 $anoSem = explode("-",$filtro);
-                $build->orWhere('monografias.ano','like','%'.$anoSem[1].'%');
-                $build->orWhere('monografias.semestre','like','%'.$anoSem[0].'%');
+                $build->orWhere('monografias.ano','like','%'.$anoSem[0].'%');
+                $build->orWhere('monografias.semestre','like','%'.$anoSem[1].'%');
             }
         } else {
             $build->orWhere('monografias.ano','like','%'.$filtro.'%');
@@ -186,7 +186,7 @@ class Monografia extends Model
         
         $build->orderBy("monografias.ano", "desc")->orderBy("alunos.nome")->orderBy("monografias.id");
         
-        $listMonografia = $build->distinct()->paginate(30);
+        $listMonografia = $build->distinct()->simplePaginate(30);
 
         return $listMonografia;
     }

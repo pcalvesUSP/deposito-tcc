@@ -5,12 +5,9 @@
 <div class="erro" id="mensagem"> {{ $mensagem }}</div>
 <h1>Área Administrativa</h1>
 <p><b>Atenção: as datas são contadas à partir da meia noite do dia selecionado</b></p>
-<form id="formParametro" action="@if ($acao=="novo") {{ route('administracao.store') }} @else {{ route('administracao.update',['administracao' => $dadosParam->first()->id ]) }} @endif" method="post">
+<form action="@if ($acao=="novo") {{ route('administracao.store') }} @else {{ route('administracao.update',['administracao' => $dadosParam->first()->id ]) }} @endif" method="post">
 @csrf
-<div id="metodo">
-@if ($acao == "atualizacao" || !empty($dadosParam->first()->id)) @method('PUT') @endif
-</div>
-<input type="hidden" name="id_parametro" id="id_parametro" value="{{ (!empty($dadosParam->first()->id))?$dadosParam->first()->id:null }}">
+@if ($acao == "atualizacao") @method('PUT') @endif
 <p>
 <select name="semestreAno" id="semestreAno">
   <option>Selecione</option>
