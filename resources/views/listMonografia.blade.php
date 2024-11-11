@@ -18,7 +18,7 @@
                     <option @if(!empty($status) && $status == "AGUARDANDO CORRECAO DO PROJETO") selected @endif value="AGUARDANDO CORRECAO DO PROJETO">Aguardando Correção do Projeto</option>
                     <option @if(!empty($status) && $status == "AGUARDANDO NOTA DO PROJETO") selected @endif value="AGUARDANDO NOTA DO PROJETO">Aguardando Nota do Projeto</option>
                     <option @if(!empty($status) && $status == "AGUARDANDO ARQUIVO TCC") selected @endif value="AGUARDANDO ARQUIVO TCC">Aguardando Arquivo TCC</option>
-                    <option @if(!empty($status) && $status == "AGUARDANDO VALIDACAO DE BANCA") selected @endif value="AGUARDANDO VALIDACAO DE BANCA">Aguardando validação da Banca</option>
+                    <option @if(!empty($status) && $status == "AGUARDANDO VALIDACAO DA BANCA") selected @endif value="AGUARDANDO VALIDACAO DA BANCA">Aguardando validação da Banca</option>
                     <option @if(!empty($status) && $status == "AGUARDANDO DEFESA") selected @endif value="AGUARDANDO DEFESA">Aguardando Defesa</option>
                     <option @if(!empty($status) && $status == "CONCLUIDO") selected @endif value="CONCLUIDO">Concluídos</option>
                 </select>
@@ -34,11 +34,12 @@
       </tr>
     </form>
     <tr>
-        <th style="width:20%" class="tableData">Titulo</th>
-        <th style="width:20%" class="tableData">Aluno</th>
-        <th style="width:20%" class="tableData">Orientador</th>
-        <th style="width:20%" class="tableData">Ano</th>
-        <th style="width:20%" class="tableData" @if ($userLogado == "Orientador") colspan="4" @else colspan="2" @endif >Ações</th>
+        <th style="width:5%" class="tableData">#</th>
+        <th style="width:19%" class="tableData">Titulo</th>
+        <th style="width:19%" class="tableData">Aluno</th>
+        <th style="width:19%" class="tableData">Orientador</th>
+        <th style="width:19%" class="tableData">Ano</th>
+        <th style="width:19%" class="tableData" @if ($userLogado == "Orientador") colspan="4" @else colspan="2" @endif >Ações</th>
     </tr>
     </thead>
     @if (!empty($filtro))
@@ -50,14 +51,15 @@
     @endphp
 
     @if ($dadosMonografias->isEmpty())
-        <tr><td colspan="5" style="text-align: center;">Nenhum registro encontrado</td></tr>
+        <tr><td colspan="7" style="text-align: center;">Nenhum registro encontrado</td></tr>
     @endif
     
-    @foreach ($dadosMonografias as $objMonografia)
+    @foreach ($dadosMonografias as $key=>$objMonografia)
         @if ($idMono == $objMonografia->id )
             @continue
         @endif
     <tr>
+        <td style="width:5%" class="tableData">{{$key+1}}</td>
         <td style="width:20%" class="tableData">{{ $objMonografia->titulo }}</td>
         <td style="width:20%" class="tableData">
         @foreach ($grupoAlunos[$objMonografia->id] as $k=>$aluno)
